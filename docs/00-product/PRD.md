@@ -7,7 +7,7 @@
 | **Version** | 1.1 (MVP) |
 | **Status** | Approved for development |
 | **Stack** | .NET 10 · Clean Architecture · DDD · CQRS (MediatR) · Identity · PostgreSQL 18 · SignalR · Angular 22 (zoneless) · Tailwind CSS 4 |
-| **Delivery plan** | M0–M6, ~23 working days (see [roadmap](roadmap.md)) |
+| **Delivery plan** | M0–M6, milestone-based with no calendar schedule (see [roadmap](roadmap.md)) |
 
 ---
 
@@ -195,17 +195,17 @@ Layer rules, folder structure and the dependency diagram: [system architecture](
 
 ## 8. Delivery Plan (M0–M6)
 
-| Milestone | Scope | Est. |
-| --- | --- | --- |
-| M0 Foundation | Solution skeleton, Docker, DB, CI, Angular 22 + Tailwind setup, design tokens | 2 days |
-| M1 Authentication | Identity, JWT/refresh, register/login/logout API; login and register UI | 4 days |
-| M2 Domain & Game API | Game aggregate + tests, CQRS commands/queries, repositories, migrations | 4 days |
-| M3 Real-time | SignalR hub, presence, lobby events, disconnect/forfeit service | 3 days |
-| M4 Lobby UI | Lobby page, game list, online players, create/join/cancel | 3 days |
-| M5 Game UI | Board, animations, turn indicator, result modal, reconnect handling | 4 days |
-| M6 Hardening | Rate limiting, integration and E2E tests, accessibility, polish, docs | 3 days |
+| Milestone | Scope |
+| --- | --- |
+| M0 Foundation | Solution skeleton, Docker, DB, CI, Angular 22 + Tailwind setup, design tokens |
+| M1 Authentication | Identity, JWT/refresh, register/login/logout API; login and register UI |
+| M2 Domain & Game API | Game aggregate + tests, CQRS commands/queries, repositories, migrations |
+| M3 Real-time | SignalR hub, presence, lobby events, disconnect/forfeit service |
+| M4 Lobby UI | Lobby page, game list, online players, create/join/cancel |
+| M5 Game UI | Board, animations, turn indicator, result modal, reconnect handling |
+| M6 Hardening | Rate limiting, integration and E2E tests, accessibility, polish, docs |
 
-Roughly 23 working days for one full-stack developer; about half with two. Details, dependencies and milestone acceptance: [roadmap.md](roadmap.md). Agent build order: [AGENTS.md](../agents/AGENTS.md).
+Milestones are delivered in dependency order — there is deliberately no calendar schedule. Details, dependencies and milestone acceptance: [roadmap.md](roadmap.md). Agent build order: [AGENTS.md](../agents/AGENTS.md).
 
 ## 9. Risks
 

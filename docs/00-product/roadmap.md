@@ -1,44 +1,22 @@
 # Roadmap — Multiplayer Tic-Tac-Toe
 
-*Turns the PRD delivery plan into an executable milestone-by-milestone roadmap with per-area scope, deliverables, checkable exit criteria, dependencies and a 23-working-day schedule.*
+*Turns the PRD delivery plan into a simple, milestone-by-milestone roadmap with per-area scope, deliverables, checkable exit criteria and dependencies — deliberately schedule-free.*
 
 ---
 
 ## 1. Overview
 
-The MVP ships in seven milestones, **M0–M6**, estimated at **23 working days for one full-stack developer** (roughly half the elapsed time with two, per the [PRD delivery plan](PRD.md#8-delivery-plan-m0m6)). Every user story, acceptance criterion and functional requirement traces to exactly one milestone sequence in the [user stories](user-stories.md) traceability matrix; the agent-level build order lives in [AGENTS.md](../agents/AGENTS.md).
+The MVP ships in seven milestones, **M0–M6**, delivered in dependency order with no calendar schedule (per the [PRD delivery plan](PRD.md#8-delivery-plan-m0m6)). Every user story, acceptance criterion and functional requirement traces to exactly one milestone sequence in the [user stories](user-stories.md) traceability matrix; the agent-level build order lives in [AGENTS.md](../agents/AGENTS.md).
 
-| Milestone | Focus | Estimate | Working days | Nominal dates (1 dev) |
-| --- | --- | --- | --- | --- |
-| M0 Foundation | Solution skeleton, Docker, DB, CI, Angular 22 + Tailwind 4, design tokens | 2 days | 1–2 | Mon 9 – Tue 10 Nov 2026 |
-| M1 Authentication | Identity, JWT + rotating refresh, auth API, login/register UI | 4 days | 3–6 | Wed 11 – Mon 16 Nov 2026 |
-| M2 Domain & Game API | Game aggregate + tests, CQRS commands/queries, repositories, migrations | 4 days | 7–10 | Tue 17 – Fri 20 Nov 2026 |
-| M3 Real-time | SignalR hub, presence, lobby events, disconnect/forfeit service | 3 days | 11–13 | Mon 23 – Wed 25 Nov 2026 |
-| M4 Lobby UI | Lobby page, game list, online players, create/join/cancel | 3 days | 14–16 | Thu 26 – Mon 30 Nov 2026 |
-| M5 Game UI | Board, animations, turn indicator, result modal, reconnect | 4 days | 17–20 | Tue 1 – Fri 4 Dec 2026 |
-| M6 Hardening | Rate limiting, integration/E2E tests, accessibility, polish, docs | 3 days | 21–23 | Mon 7 – Wed 9 Dec 2026 |
-
-Nominal dates assume a Monday 2026-11-09 start, Mon–Fri, one developer; they shift with the actual start date.
-
-### Schedule
-
-```mermaid
-gantt
-    title MVP delivery — 23 working days (one full-stack developer)
-    dateFormat YYYY-MM-DD
-    axisFormat %d %b
-    excludes weekends
-    section Build
-    M0 Foundation          :m0, 2026-11-09, 2d
-    M1 Authentication      :m1, after m0, 4d
-    M2 Domain & Game API   :m2, after m1, 4d
-    M3 Real-time           :m3, after m2, 3d
-    M4 Lobby UI            :m4, after m3, 3d
-    M5 Game UI             :m5, after m4, 4d
-    M6 Hardening           :m6, after m5, 3d
-    section Release
-    MVP released           :milestone, after m6, 0d
-```
+| Milestone | Focus |
+| --- | --- |
+| M0 Foundation | Solution skeleton, Docker, DB, CI, Angular 22 + Tailwind 4, design tokens |
+| M1 Authentication | Identity, JWT + rotating refresh, auth API, login/register UI |
+| M2 Domain & Game API | Game aggregate + tests, CQRS commands/queries, repositories, migrations |
+| M3 Real-time | SignalR hub, presence, lobby events, disconnect/forfeit service |
+| M4 Lobby UI | Lobby page, game list, online players, create/join/cancel |
+| M5 Game UI | Board, animations, turn indicator, result modal, reconnect |
+| M6 Hardening | Rate limiting, integration/E2E tests, accessibility, polish, docs |
 
 ### Dependencies
 
@@ -67,7 +45,7 @@ With two developers the plan splits naturally along the layer boundary: one trac
 
 ## 2. Milestones
 
-### M0 — Foundation (2 days)
+### M0 — Foundation
 
 **Goal:** a running, CI-guarded skeleton of the whole system — solution, database, containers, Angular shell — so every later milestone only fills in features.
 
@@ -93,7 +71,7 @@ With two developers the plan splits naturally along the layer boundary: one trac
 
 **Not in this milestone:** any business logic, authentication, SignalR, or gameplay; page content beyond the shell and tokens; any database table beyond the PostgreSQL service itself.
 
-### M1 — Authentication (4 days)
+### M1 — Authentication
 
 **Goal:** secure registration, login, logout and token lifecycle (US-01, US-02, US-03) end to end — API and UI.
 
@@ -119,7 +97,7 @@ With two developers the plan splits naturally along the layer boundary: one trac
 
 **Not in this milestone:** email verification, password reset, social login, HttpOnly refresh cookie (v1.1, see post-MVP), rate limiting (M6), lobby or game functionality.
 
-### M2 — Domain & Game API (4 days)
+### M2 — Domain & Game API
 
 **Goal:** the complete server-authoritative game core (FR-05..FR-09, FR-12) behind REST, with no real-time push yet.
 
@@ -146,7 +124,7 @@ With two developers the plan splits naturally along the layer boundary: one trac
 
 **Not in this milestone:** SignalR broadcasting, disconnect grace timers and stale-game sweeps (M3), any lobby/board UI (M4/M5), spectators or history endpoints.
 
-### M3 — Real-time (3 days)
+### M3 — Real-time
 
 **Goal:** the SignalR layer that makes the lobby and games live (FR-04, FR-10, FR-11): hub, presence, event fan-out, disconnect forfeit.
 
@@ -172,7 +150,7 @@ With two developers the plan splits naturally along the layer boundary: one trac
 
 **Not in this milestone:** lobby/board UI consumption (M4/M5), Redis backplane or distributed presence (post-MVP), chat, spectators.
 
-### M4 — Lobby UI (3 days)
+### M4 — Lobby UI
 
 **Goal:** the complete lobby experience (US-04, US-05, US-06, US-07, US-12) consuming the M2 APIs and M3 events.
 
@@ -198,7 +176,7 @@ With two developers the plan splits naturally along the layer boundary: one trac
 
 **Not in this milestone:** the game board and any gameplay UI (M5), matchmaking or quick-match, game history, spectators, chat.
 
-### M5 — Game UI (4 days)
+### M5 — Game UI
 
 **Goal:** the game page (US-08, US-09, US-10 surfaced, US-11, US-13): playable, animated, accessible, reconnect-safe.
 
@@ -224,7 +202,7 @@ With two developers the plan splits naturally along the layer boundary: one trac
 
 **Not in this milestone:** rematch, move timers, chat/emotes, confetti-heavy celebration beyond the specced burst, connection hardening beyond the automatic retry (M6).
 
-### M6 — Hardening (3 days)
+### M6 — Hardening
 
 **Goal:** production readiness: abuse protection, full test pyramid, accessibility, performance sanity and complete docs.
 
@@ -297,8 +275,6 @@ Future scope items from the [PRD future-scope list](PRD.md#11-future-scope-post-
 
 ## Assumptions
 
-- Estimates are the [PRD](PRD.md#8-delivery-plan-m0m6) figures (2 + 4 + 4 + 3 + 3 + 4 + 3 = 23 working days); two developers cut elapsed time roughly in half by splitting along the backend/frontend boundary.
-- Working days are Mon–Fri; the gantt uses a nominal start of Monday 2026-11-09, so calendar dates shift with the real start.
-- Milestones are scheduled sequentially for one developer; with two, M2 can overlap M1 since only the `[Authorize]` seams and `ICurrentUser` couple them.
+- Day estimates and the calendar schedule (gantt) were intentionally removed (2026-11-04): this is a simple milestone roadmap — order and dependencies drive delivery, not dates. The original estimates survive only in the frozen [archive](archive/original-technical-documentation.md) §17.
 - "Swagger" in the legacy Definition of Done is delivered as .NET built-in OpenAPI + Scalar UI, per the PRD stack modernization note.
 - Exit criteria referencing CI, compose services and migration behavior assume the conventions defined in [docker-and-environments](../06-devops/docker-and-environments.md) and [ci-cd](../06-devops/ci-cd.md) (migrations applied on startup in Development).

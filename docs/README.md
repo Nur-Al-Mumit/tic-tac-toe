@@ -12,7 +12,7 @@ Working in the code? Read [agents/AGENTS.md](agents/AGENTS.md) first — it carr
 | --- | --- | --- |
 | **00-product** | [PRD](00-product/PRD.md) | Vision, scope, personas, user stories, functional/non-functional requirements, flows, delivery plan — the source of truth. |
 | | [user-stories](00-product/user-stories.md) | US-01..US-13 expanded with Gherkin acceptance criteria, milestone + FR traceability matrix. |
-| | [roadmap](00-product/roadmap.md) | Milestones M0–M6: scope by area, exit criteria, dependencies, gantt, non-goals guard, post-MVP outlook. |
+| | [roadmap](00-product/roadmap.md) | Milestones M0–M6: scope by area, exit criteria, dependencies, non-goals guard, post-MVP outlook — no calendar schedule. |
 | | [archive/original-technical-documentation](00-product/archive/original-technical-documentation.md) | The frozen v1.1 originating document (single-file overview); [PRD.md](00-product/PRD.md) supersedes it. |
 | **01-architecture** | [system-architecture](01-architecture/system-architecture.md) | C4 context/container views, runtime sequences (move, join race, forfeit/reconnect), stack, cross-cutting concerns, scalability. |
 | | [clean-architecture-ddd](01-architecture/clean-architecture-ddd.md) | Dependency rule, file-level folder spec per project, DDD tactical mapping, invariants, domain events, NetArchTest enforcement. |

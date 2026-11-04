@@ -13,7 +13,7 @@ All project documentation lives in [`docs/`](docs/README.md) — start from the 
 | [Product Requirements Document](docs/00-product/PRD.md) | The source of truth: vision, scope, user stories, requirements, delivery plan. |
 | [Documentation index](docs/README.md) | Map of every doc + reading orders per role. |
 | [AGENTS.md](docs/agents/AGENTS.md) | Project rules, commands cheat-sheet, and the M0→M6 build order for contributors and coding agents. |
-| [Roadmap](docs/00-product/roadmap.md) | Milestones M0–M6 with exit criteria (~23 working days). |
+| [Roadmap](docs/00-product/roadmap.md) | Milestones M0–M6 with exit criteria, in dependency order. |
 
 ## Repository Layout
 

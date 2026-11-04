@@ -69,30 +69,30 @@ Multiplayer Tic-Tac-Toe is a real-time, two-player Tic-Tac-Toe platform with a c
 
 ## Build Order (M0 → M6)
 
-Milestones run in order; with two agents, M4 and M5 can proceed in parallel after M3. Estimates sum to ~23 working days for one full-stack developer.
+Milestones run in order; with two agents, M4 and M5 can proceed in parallel after M3. There are no time estimates — order and dependencies drive delivery.
 
 ```mermaid
 flowchart LR
-    M0["M0 Foundation (2d)"] --> M1["M1 Authentication (4d)"]
-    M1 --> M2["M2 Domain and Game API (4d)"]
-    M2 --> M3["M3 Real-time (3d)"]
-    M3 --> M4["M4 Lobby UI (3d)"]
-    M3 --> M5["M5 Game UI (4d)"]
-    M4 --> M6["M6 Hardening (3d)"]
+    M0["M0 Foundation"] --> M1["M1 Authentication"]
+    M1 --> M2["M2 Domain and Game API"]
+    M2 --> M3["M3 Real-time"]
+    M3 --> M4["M4 Lobby UI"]
+    M3 --> M5["M5 Game UI"]
+    M4 --> M6["M6 Hardening"]
     M5 --> M6
 ```
 
-| Milestone | Goal | Est. | Depends on |
-| --- | --- | --- | --- |
-| M0 Foundation | Runnable skeleton: solution, Docker, DB, CI, Angular + Tailwind + design tokens | 2 d | — |
-| M1 Authentication | Identity, JWT/refresh API, login/register UI | 4 d | M0 |
-| M2 Domain & Game API | Game aggregate + CQRS game and move endpoints, race-safe | 4 d | M1 |
-| M3 Real-time | SignalR hub, presence, lobby events, forfeit/stale services | 3 d | M2 |
-| M4 Lobby UI | Lobby page wired to REST + SignalR | 3 d | M3 |
-| M5 Game UI | Board, animations, result modal, reconnect handling | 4 d | M3 |
-| M6 Hardening | Rate limiting, full test suites, accessibility, polish, docs | 3 d | M4, M5 |
+| Milestone | Goal | Depends on |
+| --- | --- | --- |
+| M0 Foundation | Runnable skeleton: solution, Docker, DB, CI, Angular + Tailwind + design tokens | — |
+| M1 Authentication | Identity, JWT/refresh API, login/register UI | M0 |
+| M2 Domain & Game API | Game aggregate + CQRS game and move endpoints, race-safe | M1 |
+| M3 Real-time | SignalR hub, presence, lobby events, forfeit/stale services | M2 |
+| M4 Lobby UI | Lobby page wired to REST + SignalR | M3 |
+| M5 Game UI | Board, animations, result modal, reconnect handling | M3 |
+| M6 Hardening | Rate limiting, full test suites, accessibility, polish, docs | M4, M5 |
 
-### M0 — Foundation (2 days)
+### M0 — Foundation
 
 | Aspect | Detail |
 | --- | --- |
@@ -106,7 +106,7 @@ flowchart LR
 
 Done when: compose brings up postgres + api + client and `/health` reports healthy; CI is green on GitHub Actions; `dotnet build` emits zero warnings; the Tailwind theme matches the design tokens; all routes render the shell.
 
-### M1 — Authentication (4 days)
+### M1 — Authentication
 
 | Aspect | Detail |
 | --- | --- |
@@ -120,7 +120,7 @@ Done when: compose brings up postgres + api + client and `/health` reports healt
 
 Done when: register → login → refresh → logout integration tests pass; duplicate username/email returns 409; bad credentials return 401 as a `Result` error; locked-out login returns 423; the UI meets the acceptance criteria for US-01 to US-03; an expired access token silently refreshes and retries (US-02 AC).
 
-### M2 — Domain & Game API (4 days)
+### M2 — Domain & Game API
 
 | Aspect | Detail |
 | --- | --- |
@@ -134,7 +134,7 @@ Done when: register → login → refresh → logout integration tests pass; dup
 
 Done when: Domain unit tests cover all 8 win lines, draw, strict X-first alternation, occupied cell, forfeit, and finished-game immutability; simultaneous joins produce exactly one winner; not-your-turn returns 409 and invalid position 422 as `Result` errors; every endpoint matches the status codes in the API spec; domain events dispatch after SaveChanges (proven by tests); Domain and Application coverage is 80%+.
 
-### M3 — Real-time (3 days)
+### M3 — Real-time
 
 | Aspect | Detail |
 | --- | --- |
@@ -148,7 +148,7 @@ Done when: Domain unit tests cover all 8 win lines, draw, strict X-first alterna
 
 Done when: hub tests prove `PresenceChanged`, `GameCreated`, `GameUpdated`, `GameRemoved` reach `lobby` and `GameStarted`, `MoveMade`, `GameFinished`, `OpponentConnection` reach `game-{id}`; a 30 s disconnect executes the forfeit and broadcasts `GameFinished`; reconnect cancels the timer; `Waiting` games older than 15 minutes are cancelled; multiple tabs register as one presence entry.
 
-### M4 — Lobby UI (3 days)
+### M4 — Lobby UI
 
 | Aspect | Detail |
 | --- | --- |
@@ -162,7 +162,7 @@ Done when: hub tests prove `PresenceChanged`, `GameCreated`, `GameUpdated`, `Gam
 
 Done when: the lobby updates in real time without refresh (FR-10); simultaneous join lets exactly one user in and the other sees "Game is already full" (US-07 AC); the creator can cancel a waiting game (US-12); the one-active-game rule surfaces cleanly in the UI (409 handled); users can return to the lobby after a game (US-11); online players and count are live (US-04, US-05).
 
-### M5 — Game UI (4 days)
+### M5 — Game UI
 
 | Aspect | Detail |
 | --- | --- |
@@ -176,7 +176,7 @@ Done when: the lobby updates in real time without refresh (FR-10); simultaneous 
 
 Done when: opponent moves appear instantly (US-08); an out-of-turn click triggers the shake and leaves state unchanged (US-08 AC); win/draw animations and the result modal fire (US-09); a page refresh rejoins the active game (US-13); `prefers-reduced-motion` is respected; the board is fully keyboard playable.
 
-### M6 — Hardening (3 days)
+### M6 — Hardening
 
 | Aspect | Detail |
 | --- | --- |
