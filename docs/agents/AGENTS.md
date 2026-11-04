@@ -24,7 +24,7 @@ Multiplayer Tic-Tac-Toe is a real-time, two-player Tic-Tac-Toe platform with a c
 2. **Respect the dependency rule:** Domain ← Application ← Infrastructure ← Api. `TicTacToe.Domain` references nothing; `TicTacToe.Application` references only Domain; `TicTacToe.Infrastructure` implements Application abstractions; `TicTacToe.Api` does DI composition and transport only. See [clean architecture & DDD](../01-architecture/clean-architecture-ddd.md).
 3. **Controllers are thin.** Send a Cortex.Mediator command/query, map `Result<T>` to HTTP through the shared ProblemDetails mapping — no business or orchestration logic in controllers.
 4. **No business logic outside Domain aggregates.** `Game.Create/Join/MakeMove/Forfeit/Cancel` and the invariants live in the aggregate; handlers orchestrate, they never decide.
-5. **All backend tests use NUnit** ([ADR-0012](../01-architecture/adr/0012-nunit-test-framework.md)) with FluentAssertions and NSubstitute; integration tests run against real PostgreSQL 18 via Testcontainers with Respawn resets.
+5. **All backend tests use NUnit** ([ADR-0012](../01-architecture/adr/0012-nunit-test-framework.md)) with Shouldly assertions ([ADR-0014](../01-architecture/adr/0014-shouldly-assertions.md)) and NSubstitute; integration tests run against real PostgreSQL 18 via Testcontainers with Respawn resets.
 6. **Every command has a FluentValidation validator**, executed by the validation pipeline behavior. Validators check input shape; aggregates enforce domain rules.
 7. **Queries never load aggregates.** The read side goes through `IReadDbContext` `AsNoTracking` projections straight to DTOs. See [CQRS & Mediator](../01-architecture/cqrs-and-mediator.md).
 8. **Expected failures are `Result<T>`, not exceptions** ([ADR-0009](../01-architecture/adr/0009-result-pattern-expected-failures.md)): invalid credentials, game full, not your turn, cell occupied.
@@ -241,6 +241,7 @@ Per [testing-strategy.md](../05-quality/testing-strategy.md): code reviewed; tes
 | [01-architecture/adr/0001-clean-architecture-and-ddd.md](../01-architecture/adr/0001-clean-architecture-and-ddd.md) | ADR: adopt Clean Architecture with DDD tactical patterns. |
 | [01-architecture/adr/0002-mediatr-for-cqrs.md](../01-architecture/adr/0002-mediatr-for-cqrs.md) | ADR: MediatR for CQRS — **superseded** by ADR-0013. |
 | [01-architecture/adr/0013-cortex-mediator.md](../01-architecture/adr/0013-cortex-mediator.md) | ADR: Cortex.Mediator as the in-process mediator (supersedes ADR-0002). |
+| [01-architecture/adr/0014-shouldly-assertions.md](../01-architecture/adr/0014-shouldly-assertions.md) | ADR: Shouldly as the sole assertion library (refines ADR-0012). |
 | [01-architecture/adr/0003-postgresql-ef-core-npgsql.md](../01-architecture/adr/0003-postgresql-ef-core-npgsql.md) | ADR: PostgreSQL with EF Core and Npgsql. |
 | [01-architecture/adr/0004-identity-jwt-rotating-refresh-tokens.md](../01-architecture/adr/0004-identity-jwt-rotating-refresh-tokens.md) | ADR: Identity + JWT with rotating hashed refresh tokens. |
 | [01-architecture/adr/0005-rest-moves-signalr-broadcasts.md](../01-architecture/adr/0005-rest-moves-signalr-broadcasts.md) | ADR: moves over REST, results broadcast via SignalR. |

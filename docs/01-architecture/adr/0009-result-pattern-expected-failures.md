@@ -33,7 +33,7 @@ Canonical error-to-HTTP examples (full table in the [CQRS & MediatR](../cqrs-and
 
 - Method signature honesty: `Result<GameDto>` tells callers failure is planned-for; the success path carries the authoritative DTO.
 - Codes (`Game.Full`) are a stable client contract independent of exception class names — refactoring the Domain cannot silently break the SPA's error-message mapping.
-- Unit tests assert failure *reasons* (`result.Error.Code.Should().Be("Game.NotYourTurn")`), which reads better than exception-type assertions and matches the API contract exactly.
+- Unit tests assert failure *reasons* (`result.Error.Code.ShouldBe("Games.NotYourTurn")` per the [canonical registry](../../02-backend/api-spec.md#14-error-code-catalog), asserted with Shouldly), which reads better than exception-type assertions and matches the API contract exactly.
 - Expected failures stay out of exception logging/alerting — Serilog noise reflects only real problems (supporting the <1% error-rate metric).
 
 **Negative**

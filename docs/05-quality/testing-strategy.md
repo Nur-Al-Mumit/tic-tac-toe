@@ -20,7 +20,7 @@ flowchart TD
     E2E["E2E smoke - Playwright<br/>~8 scenarios - minutes - two browser contexts"]
     INT["API and hub integration - NUnit 4 + Testcontainers + SignalR client<br/>~70 tests - seconds - real PostgreSQL 18"]
     APP["Application unit - NUnit 4 + NSubstitute<br/>~90 tests - milliseconds"]
-    DOM["Domain unit - NUnit 4 + FluentAssertions<br/>~80 tests - microseconds"]
+    DOM["Domain unit - NUnit 4 + Shouldly<br/>~80 tests - microseconds"]
     FE["Frontend unit - vitest + jsdom<br/>~60 tests - milliseconds"]
     E2E --> INT
     E2E --> FE
@@ -48,7 +48,7 @@ The PRD-mandated **80%+ unit coverage on Domain and Application** is enforced pe
 | Tool | Scope | Role |
 | --- | --- | --- |
 | **NUnit 4** | all .NET test projects | Mandated test framework: `[Test]`, `[TestCase]`, `[SetUp]`/`[OneTimeSetUp]`, `SetUpFixture`, parallelization attributes |
-| **FluentAssertions** | all .NET tests | Readable assertions: `.Should().Be(...)`, `.Should().ThrowAsync<GameFullException>()` |
+| **Shouldly** ([ADR-0014](../01-architecture/adr/0014-shouldly-assertions.md)) | all .NET tests | Sole assertion library: `x.ShouldBe(y)`, `ShouldNotBeNull()`, `ShouldContain(item)`, `await Should.ThrowAsync<GameFullException>(act)`, `Should.NotThrow(act)` — `Assert.That` appears nowhere |
 | **NSubstitute** | Application unit tests | Mocks for `IGameRepository`, `IIdentityService`, `ITokenService`, `ICurrentUser`, `IPresenceTracker`, `IGameNotifier`, `IUnitOfWork`, `IDateTimeProvider`, `IReadDbContext`; `.Received()` / `.DidNotReceive()` verification |
 | **Testcontainers for .NET** (PostgreSQL 18 module) | integration tests | Real PostgreSQL 18 container per test run; no shared external DB, no in-memory substitute |
 | **Respawn** | integration tests | Deletes all table data between tests (schema intact) — fast, reliable reset without re-migrating |
@@ -362,7 +362,7 @@ Two browser contexts (`hostContext`, `opponentContext`) drive the two players ag
 
 ### 9.2 Structure — AAA
 
-Every test has three visibly separated regions, in order: **Arrange** (build data via builders/stubs), **Act** (one operation), **Assert** (FluentAssertions on outcome *and* on state side effects/events where relevant). One behavior per test; no conditional assertions.
+Every test has three visibly separated regions, in order: **Arrange** (build data via builders/stubs), **Act** (one operation), **Assert** (Shouldly assertions on outcome *and* on state side effects/events where relevant). One behavior per test; no conditional assertions.
 
 ### 9.3 Test data builders
 

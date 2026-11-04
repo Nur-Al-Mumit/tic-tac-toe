@@ -169,7 +169,7 @@ Design principles, tokens, page specs and animation details live in the frontend
 
 ## 7. Technical Blueprint Summary
 
-> **Stack modernization (2026-11-04):** the original technical documentation §6.2 pinned .NET 8 / EF Core 8 / PostgreSQL 16 / Angular 17+. Per stakeholder decision, this project targets the **latest stable stack** below; the original document's §6.2 has since been aligned to this decision (its v1.1 update, archived at [00-product/archive](archive/original-technical-documentation.md)). Domain design, API contracts and database design are unchanged. Recorded in [ADR-0011](../01-architecture/adr/0011-latest-stable-stack.md) and [ADR-0012](../01-architecture/adr/0012-nunit-test-framework.md); the in-process mediator is Cortex.Mediator per [ADR-0013](../01-architecture/adr/0013-cortex-mediator.md).
+> **Stack modernization (2026-11-04):** the original technical documentation §6.2 pinned .NET 8 / EF Core 8 / PostgreSQL 16 / Angular 17+. Per stakeholder decision, this project targets the **latest stable stack** below; the original document's §6.2 has since been aligned to this decision (its v1.1 update, archived at [00-product/archive](archive/original-technical-documentation.md)). Domain design, API contracts and database design are unchanged. Recorded in [ADR-0011](../01-architecture/adr/0011-latest-stable-stack.md) and [ADR-0012](../01-architecture/adr/0012-nunit-test-framework.md); the in-process mediator is Cortex.Mediator per [ADR-0013](../01-architecture/adr/0013-cortex-mediator.md) and assertions are Shouldly per [ADR-0014](../01-architecture/adr/0014-shouldly-assertions.md).
 
 | Layer | Choice |
 | --- | --- |
@@ -183,7 +183,7 @@ Design principles, tokens, page specs and animation details live in the frontend
 | Real-time | SignalR |
 | API docs | .NET built-in OpenAPI (Microsoft.AspNetCore.OpenApi) + Scalar UI |
 | Logging | Serilog |
-| Backend tests | **NUnit** (mandated), FluentAssertions, NSubstitute, Testcontainers (PostgreSQL), Respawn |
+| Backend tests | **NUnit** (mandated) + **Shouldly** assertions, NSubstitute, Testcontainers (PostgreSQL), Respawn |
 | Frontend | Angular 22 — standalone components, signals, **zoneless** change detection |
 | Styling | Tailwind CSS 4 (CSS-first `@theme` configuration) |
 | Real-time client | @microsoft/signalr |
@@ -240,7 +240,7 @@ Game history and profile stats; ELO rating and leaderboard; quick-match queue; p
 
 ## Assumptions
 
-- This PRD restructures the original technical documentation (archived at [archive/original-technical-documentation.md](archive/original-technical-documentation.md)) without changing its requirements; where the two differ, **this file wins** (it carries the 2026-11-04 stack modernization: .NET 10, EF Core 10, PostgreSQL 18, Angular 22 zoneless, Tailwind CSS 4, built-in OpenAPI + Scalar, NUnit for backend tests, vitest/Playwright for frontend).
+- This PRD restructures the original technical documentation (archived at [archive/original-technical-documentation.md](archive/original-technical-documentation.md)) without changing its requirements; where the two differ, **this file wins** (it carries the 2026-11-04 stack modernization: .NET 10, EF Core 10, PostgreSQL 18, Angular 22 zoneless, Tailwind CSS 4, built-in OpenAPI + Scalar, NUnit with Shouldly for backend tests, vitest/Playwright for frontend).
 - "NUnit" is the mandated .NET test framework (stakeholder instruction "NUunittest" interpreted as NUnit); frontend unit testing uses vitest, the Angular CLI default.
 - One game per user at a time; creator is always X; public games only (no private invite links in MVP).
 - Email is not verified in MVP. Browser support: latest 2 versions of Chrome, Edge, Firefox, Safari.

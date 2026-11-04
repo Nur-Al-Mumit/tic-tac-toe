@@ -113,7 +113,7 @@ With two developers the plan splits naturally along the layer boundary: one trac
 
 **Exit criteria:**
 
-- [ ] Domain unit tests (NUnit + FluentAssertions) cover join guards, X-first turn alternation, all 8 win lines, draw, forfeit, cancel, and finished-game immutability — ≥ 80% coverage of `TicTacToe.Domain`
+- [ ] Domain unit tests (NUnit + Shouldly) cover join guards, X-first turn alternation, all 8 win lines, draw, forfeit, cancel, and finished-game immutability — ≥ 80% coverage of `TicTacToe.Domain`
 - [ ] Application unit tests (NSubstitute) cover each handler's success and failure paths through `Result<T>`
 - [ ] An integration test proves the US-07 join race: two simultaneous joins produce exactly one 200 and one 409 "game is already full"
 - [ ] All game endpoints return the documented codes (201 create, 200 join/move, 204 cancel, 401/403/404/409/422 errors) and map domain exceptions correctly
