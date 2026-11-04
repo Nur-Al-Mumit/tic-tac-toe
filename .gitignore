@@ -1,0 +1,49 @@
+# ===== .NET =====
+bin/
+obj/
+artifacts/
+TestResults/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider / Visual Studio
+.vs/
+.idea/
+
+# ===== Secrets & environment (never commit — see docs/05-quality/security.md) =====
+*.env
+*.env.*
+web.env
+appsettings.*.local.json
+secrets.json
+user-secrets/
+
+# ===== Node / Angular (client/) =====
+node_modules/
+dist/
+.angular/
+coverage/
+*.tsbuildinfo
+.npm/
+
+# ===== Playwright =====
+test-results/
+playwright-report/
+blob-report/
+
+# ===== Docker / PostgreSQL =====
+volume/
+pgdata/
+*.pid
+
+# ===== Logs =====
+Logs/
+*.log
+
+# ===== OS / editor =====
+.DS_Store
+Thumbs.db
+*.swp
+*~
