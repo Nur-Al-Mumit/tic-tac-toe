@@ -60,7 +60,7 @@ One transaction creates the Identity user, the `PlayerProfile` and the initial r
 sequenceDiagram
     actor V as Visitor (SPA)
     participant C as AuthController
-    participant M as MediatR pipeline
+    participant M as Cortex.Mediator pipeline
     participant H as RegisterCommandHandler
     participant I as IIdentityService (Identity)
     participant R as PlayerProfileRepository

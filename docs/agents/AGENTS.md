@@ -16,21 +16,21 @@ If this file and the PRD disagree, the PRD wins and this file gets corrected.
 
 ## Project Overview
 
-Multiplayer Tic-Tac-Toe is a real-time, two-player Tic-Tac-Toe platform with a chess.com-inspired lobby: users register in seconds, see who is online, create or join a game (host is X, joiner is O), and play server-authoritative matches with an animated UI. The backend is .NET 10 / ASP.NET Core (Clean Architecture + DDD + CQRS via MediatR) on PostgreSQL 18 via EF Core, with SignalR pushing game events and Serilog logging. The frontend is an Angular 22 app (standalone components, signals, zoneless) styled with Tailwind CSS 4 in `client/`. Everything runs under Docker Compose and is verified in GitHub Actions. The complete product definition — vision, scope, user stories, requirements, delivery plan — lives in the [PRD](../00-product/PRD.md).
+Multiplayer Tic-Tac-Toe is a real-time, two-player Tic-Tac-Toe platform with a chess.com-inspired lobby: users register in seconds, see who is online, create or join a game (host is X, joiner is O), and play server-authoritative matches with an animated UI. The backend is .NET 10 / ASP.NET Core (Clean Architecture + DDD + CQRS via Cortex.Mediator) on PostgreSQL 18 via EF Core, with SignalR pushing game events and Serilog logging. The frontend is an Angular 22 app (standalone components, signals, zoneless) styled with Tailwind CSS 4 in `client/`. Everything runs under Docker Compose and is verified in GitHub Actions. The complete product definition — vision, scope, user stories, requirements, delivery plan — lives in the [PRD](../00-product/PRD.md).
 
 ## Golden Rules
 
 1. **The PRD is the source of truth.** If code and docs disagree, fix the code to match the PRD — or, if the PRD itself must change, record the decision in a new ADR in [01-architecture/adr/](../01-architecture/adr/) and update the PRD. Never drift silently.
 2. **Respect the dependency rule:** Domain ← Application ← Infrastructure ← Api. `TicTacToe.Domain` references nothing; `TicTacToe.Application` references only Domain; `TicTacToe.Infrastructure` implements Application abstractions; `TicTacToe.Api` does DI composition and transport only. See [clean architecture & DDD](../01-architecture/clean-architecture-ddd.md).
-3. **Controllers are thin.** Send a MediatR request, map `Result<T>` to HTTP through the shared ProblemDetails mapping — no business or orchestration logic in controllers.
+3. **Controllers are thin.** Send a Cortex.Mediator command/query, map `Result<T>` to HTTP through the shared ProblemDetails mapping — no business or orchestration logic in controllers.
 4. **No business logic outside Domain aggregates.** `Game.Create/Join/MakeMove/Forfeit/Cancel` and the invariants live in the aggregate; handlers orchestrate, they never decide.
 5. **All backend tests use NUnit** ([ADR-0012](../01-architecture/adr/0012-nunit-test-framework.md)) with FluentAssertions and NSubstitute; integration tests run against real PostgreSQL 18 via Testcontainers with Respawn resets.
 6. **Every command has a FluentValidation validator**, executed by the validation pipeline behavior. Validators check input shape; aggregates enforce domain rules.
-7. **Queries never load aggregates.** The read side goes through `IReadDbContext` `AsNoTracking` projections straight to DTOs. See [CQRS & MediatR](../01-architecture/cqrs-and-mediatr.md).
+7. **Queries never load aggregates.** The read side goes through `IReadDbContext` `AsNoTracking` projections straight to DTOs. See [CQRS & Mediator](../01-architecture/cqrs-and-mediator.md).
 8. **Expected failures are `Result<T>`, not exceptions** ([ADR-0009](../01-architecture/adr/0009-result-pattern-expected-failures.md)): invalid credentials, game full, not your turn, cell occupied.
 9. **Optimistic concurrency via `xmin`.** On `DbUpdateConcurrencyException`, reload once, re-evaluate the domain rules, and return the proper result (for example "Game is already full"). See [concurrency](../03-database/concurrency.md).
 10. **The SignalR hub is push-only** ([ADR-0005](../01-architecture/adr/0005-rest-moves-signalr-broadcasts.md)): moves are submitted over REST; the hub broadcasts results and never mutates game state — presence tracking is the only exception.
-11. **Domain events dispatch after `SaveChanges`** → MediatR notifications → `IGameNotifier` pushes SignalR messages. Command handlers never broadcast directly.
+11. **Domain events dispatch after `SaveChanges`** → Cortex.Mediator notifications (`PublishAsync`) → `IGameNotifier` pushes SignalR messages. Command handlers never broadcast directly.
 12. **snake_case database naming via convention** (`UseSnakeCaseNamingConvention`) — never hand-name tables or columns in mappings. See [schema & ERD](../03-database/schema-and-erd.md).
 13. **No secrets in code, config, or docs.** JWT key, DB password, and connection strings come from environment variables or user-secrets; never commit them; never log passwords, tokens, or full emails.
 14. **Adding a cross-cutting decision? Write a new ADR** in [01-architecture/adr/](../01-architecture/adr/) following the existing numbering and format, and link it from the affected docs.
@@ -129,7 +129,7 @@ Done when: register → login → refresh → logout integration tests pass; dup
 | Frontend | None mandatory — exercise the API through Scalar. |
 | Database | `games` and `moves` tables; index `(status, created_at_utc DESC)`; partial unique indexes enforcing one active game per player; unique constraints `(game_id, position)` and `(game_id, move_number)`. |
 | DevOps | None. |
-| Re-read first | [clean-architecture-ddd.md](../01-architecture/clean-architecture-ddd.md), [cqrs-and-mediatr.md](../01-architecture/cqrs-and-mediatr.md), [api-spec.md](../02-backend/api-spec.md), [schema-and-erd.md](../03-database/schema-and-erd.md), [concurrency.md](../03-database/concurrency.md) |
+| Re-read first | [clean-architecture-ddd.md](../01-architecture/clean-architecture-ddd.md), [cqrs-and-mediator.md](../01-architecture/cqrs-and-mediator.md), [api-spec.md](../02-backend/api-spec.md), [schema-and-erd.md](../03-database/schema-and-erd.md), [concurrency.md](../03-database/concurrency.md) |
 | Verify | `dotnet test` (Domain unit tests + join-race integration tests + coverage report) |
 
 Done when: Domain unit tests cover all 8 win lines, draw, strict X-first alternation, occupied cell, forfeit, and finished-game immutability; simultaneous joins produce exactly one winner; not-your-turn returns 409 and invalid position 422 as `Result` errors; every endpoint matches the status codes in the API spec; domain events dispatch after SaveChanges (proven by tests); Domain and Application coverage is 80%+.
@@ -139,7 +139,7 @@ Done when: Domain unit tests cover all 8 win lines, draw, strict X-first alterna
 | Aspect | Detail |
 | --- | --- |
 | Goal | FR-04, FR-10, FR-11: the SignalR hub, presence, lobby broadcasts, and the disconnect/stale-game services. |
-| Backend | `GameHub` at `/hubs/game` (`[Authorize]`, JWT via `access_token` query string); groups `lobby` and `game-{id}`; `PresenceTracker` singleton (userId → connection IDs, multiple tabs count once); `JoinGameRoom`/`LeaveGameRoom` with participant validation; `SignalRGameNotifier : IGameNotifier`; MediatR notification handlers per domain event → hub sends; `GetOnlinePlayersQuery`; `DisconnectGraceService` (30 s forfeit timers, cancelled on reconnect; cancels `Waiting` games older than 15 minutes). |
+| Backend | `GameHub` at `/hubs/game` (`[Authorize]`, JWT via `access_token` query string); groups `lobby` and `game-{id}`; `PresenceTracker` singleton (userId → connection IDs, multiple tabs count once); `JoinGameRoom`/`LeaveGameRoom` with participant validation; `SignalRGameNotifier : IGameNotifier`; Cortex.Mediator notification handlers per domain event → hub sends; `GetOnlinePlayersQuery`; `DisconnectGraceService` (30 s forfeit timers, cancelled on reconnect; cancels `Waiting` games older than 15 minutes). |
 | Frontend | None mandatory (`SignalRService` lands with M4/M5). |
 | Database | None. |
 | DevOps | Confirm WebSocket support through the nginx/compose chain. |
@@ -237,9 +237,10 @@ Per [testing-strategy.md](../05-quality/testing-strategy.md): code reviewed; tes
 | [00-product/roadmap.md](../00-product/roadmap.md) | M0–M6 delivery detail, dependencies, milestone acceptance. |
 | [01-architecture/system-architecture.md](../01-architecture/system-architecture.md) | High-level system, stack, solution structure. |
 | [01-architecture/clean-architecture-ddd.md](../01-architecture/clean-architecture-ddd.md) | Layers, dependency rule, domain model, ubiquitous language. |
-| [01-architecture/cqrs-and-mediatr.md](../01-architecture/cqrs-and-mediatr.md) | Commands, queries, pipeline behaviors, Result pattern usage. |
+| [01-architecture/cqrs-and-mediator.md](../01-architecture/cqrs-and-mediator.md) | Commands, queries, pipeline behaviors, Result pattern usage. |
 | [01-architecture/adr/0001-clean-architecture-and-ddd.md](../01-architecture/adr/0001-clean-architecture-and-ddd.md) | ADR: adopt Clean Architecture with DDD tactical patterns. |
-| [01-architecture/adr/0002-mediatr-for-cqrs.md](../01-architecture/adr/0002-mediatr-for-cqrs.md) | ADR: use MediatR for CQRS. |
+| [01-architecture/adr/0002-mediatr-for-cqrs.md](../01-architecture/adr/0002-mediatr-for-cqrs.md) | ADR: MediatR for CQRS — **superseded** by ADR-0013. |
+| [01-architecture/adr/0013-cortex-mediator.md](../01-architecture/adr/0013-cortex-mediator.md) | ADR: Cortex.Mediator as the in-process mediator (supersedes ADR-0002). |
 | [01-architecture/adr/0003-postgresql-ef-core-npgsql.md](../01-architecture/adr/0003-postgresql-ef-core-npgsql.md) | ADR: PostgreSQL with EF Core and Npgsql. |
 | [01-architecture/adr/0004-identity-jwt-rotating-refresh-tokens.md](../01-architecture/adr/0004-identity-jwt-rotating-refresh-tokens.md) | ADR: Identity + JWT with rotating hashed refresh tokens. |
 | [01-architecture/adr/0005-rest-moves-signalr-broadcasts.md](../01-architecture/adr/0005-rest-moves-signalr-broadcasts.md) | ADR: moves over REST, results broadcast via SignalR. |

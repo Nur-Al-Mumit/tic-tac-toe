@@ -66,7 +66,7 @@ A user with several tabs/devices has several connections, all added to the same 
 | `GameFinished` | `GameDto` (with `result`) | `game-{id}` | Game ended: win, draw or forfeit (reason `Forfeit` when the grace timer or `/leave` ended it) |
 | `OpponentConnection` | `{ playerId, connected, graceSecondsLeft? }` | `game-{id}` | Opponent's presence changed: disconnected (`connected: false`, with remaining grace), or returned (`connected: true`) |
 
-All payloads are camelCase JSON matching the REST DTOs ([api-spec §3](api-spec.md#3-dto-schemas)) — one client model serves both channels. Broadcasts are dispatched **post-commit** by domain-event notification handlers via `IGameNotifier`, so the hub never announces state that was rolled back ([CQRS & MediatR §5](../01-architecture/cqrs-and-mediatr.md#5-domain-event--notification-handler-flow)).
+All payloads are camelCase JSON matching the REST DTOs ([api-spec §3](api-spec.md#3-dto-schemas)) — one client model serves both channels. Broadcasts are dispatched **post-commit** by domain-event notification handlers via `IGameNotifier`, so the hub never announces state that was rolled back ([CQRS & Mediator §5](../01-architecture/cqrs-and-mediator.md#5-domain-event--notification-handler-flow)).
 
 ### 5.2 Payload examples
 
@@ -154,7 +154,7 @@ Rules common to all three flows:
 | --- | --- |
 | `OnConnectedAsync` | Authenticate (JWT) → `PresenceTracker.AddConnection(userId, connectionId)` → add connection to `lobby` → if the user just came online, broadcast `PresenceChanged` → if the user has an active game (Waiting or InProgress), add the connection to its `game-{id}` group and **cancel any running grace timer** for that user |
 | `OnDisconnectedAsync` | `PresenceTracker.RemoveConnection(userId, connectionId)` → if the user still has other connections, nothing else happens (multi-tab) → otherwise broadcast `PresenceChanged`, and if the user is in an `InProgress` game, start the 30 s grace timer and emit `OpponentConnection(connected: false, graceSecondsLeft: 30)` to `game-{id}` |
-| Grace timer fires | `DisconnectGraceService` dispatches `ForfeitGameCommand(gameId, playerId)` through the MediatR pipeline (same validation, same xmin guard as a user command); commit publishes `GameFinished(reason Forfeit)` to `game-{id}` and `GameRemoved` to `lobby` |
+| Grace timer fires | `DisconnectGraceService` dispatches `ForfeitGameCommand(gameId, playerId)` through the Cortex.Mediator command pipeline (same validation, same xmin guard as a user command); commit publishes `GameFinished(reason Forfeit)` to `game-{id}` and `GameRemoved` to `lobby` |
 
 ### 6.1 Connect with an active game (page refresh mid-game)
 
@@ -192,7 +192,7 @@ sequenceDiagram
     participant H as GameHub
     participant PT as PresenceTracker
     participant Svc as DisconnectGraceService
-    participant CMD as ForfeitGameCommand (MediatR)
+    participant CMD as ForfeitGameCommand (Cortex.Mediator)
     participant O as Opponent (game-{id})
     participant L as lobby group
 
@@ -243,7 +243,7 @@ A singleton `IHostedService` in Infrastructure (`Hosting/DisconnectGraceService.
 Design rules:
 
 - **Cancel on reconnect:** the hub's `OnConnectedAsync` cancels the timer for that (gameId, userId) before the opponent sees `connected: true`; cancellation is idempotent.
-- **Commands, not DbContext:** every timer executes a MediatR command, so xmin optimistic concurrency, validation and the unit-of-work apply unchanged — including the forfeit-vs-move race, where the loser reloads once and re-evaluates ([concurrency §4.2](../03-database/concurrency.md#42-disconnect-forfeit-vs-simultaneous-move)). If the reload shows the game already finalized, the forfeit resolves as a success-no-op.
+- **Commands, not DbContext:** every timer executes a Cortex.Mediator command, so xmin optimistic concurrency, validation and the unit-of-work apply unchanged — including the forfeit-vs-move race, where the loser reloads once and re-evaluates ([concurrency §4.2](../03-database/concurrency.md#42-disconnect-forfeit-vs-simultaneous-move)). If the reload shows the game already finalized, the forfeit resolves as a success-no-op.
 - **Idempotent expiry:** a forfeit firing for an already-Finished game is a no-op, so duplicate or late timers are harmless.
 - **Process restart:** in-memory timers vanish with the process; a scheduled-but-unfired forfeit simply never happens (safe-side: the game resumes when the player reconnects). All sockets drop on restart anyway, which re-runs the normal grace flow.
 - **One timer per (gameId, userId):** starting a timer for a pair that already has one replaces it.
@@ -301,7 +301,7 @@ Presence, group membership and grace timers are **in-process** for the MVP: an i
 
 ## Assumptions
 
-- This file finalizes the client-facing event mapping: on game start the lobby receives `GameUpdated` (the game must move to the lobby's In Progress tab, US-05) and `GameRemoved` is reserved for terminal states; where other documents sketch a `GameRemoved`-on-start lobby emission ([cqrs-and-mediatr §5](../01-architecture/cqrs-and-mediatr.md#5-domain-event--notification-handler-flow)) or annotate `GameRemoved` with "started", the mapping in §5.4 is canonical.
+- This file finalizes the client-facing event mapping: on game start the lobby receives `GameUpdated` (the game must move to the lobby's In Progress tab, US-05) and `GameRemoved` is reserved for terminal states; where other documents sketch a `GameRemoved`-on-start lobby emission ([cqrs-and-mediator §5](../01-architecture/cqrs-and-mediator.md#5-domain-event--notification-handler-flow)) or annotate `GameRemoved` with "started", the mapping in §5.4 is canonical.
 - A user is "online" iff they hold at least one live hub connection; REST-only activity does not count, and multiple tabs/devices aggregate into one presence entry (PRD open question #2).
 - Grace-timer countdowns shown to the opponent start at the configured `GameRules__DisconnectGraceSeconds` (30 s default, 2 s in integration tests); clients render from `graceSecondsLeft` rather than counting independently.
 - Hub payload examples use the same illustrative GUIDs/identities as the [API spec](api-spec.md#2-endpoints); they are samples, not fixtures.

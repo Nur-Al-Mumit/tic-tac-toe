@@ -55,7 +55,7 @@ Mapping inventory for the MVP (all configured centrally, none in Domain):
 
 - [PRD](../../00-product/PRD.md) (§7 stack table — "Mapster (manual mapping in Domain)")
 - [Clean Architecture & DDD](../clean-architecture-ddd.md) — where mappings live in the folder spec
-- [CQRS & MediatR](../cqrs-and-mediatr.md) — DTO-producing commands/queries that consume the mappings
+- [CQRS & MediatR](../cqrs-and-mediator.md) — DTO-producing commands/queries that consume the mappings
 - [ADR-0001 Clean Architecture](0001-clean-architecture-and-ddd.md) — Domain purity this decision protects
 - [ADR-0009 Result pattern](0009-result-pattern-expected-failures.md) — the payload the mappers produce
 

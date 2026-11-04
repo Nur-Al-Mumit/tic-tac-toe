@@ -134,7 +134,7 @@ The *host-only* rule of `Cancel` is an authorization concern: `CancelGameCommand
 
 ## 5. Application Unit Tests (`TicTacToe.Application.UnitTests`)
 
-All dependencies are NSubstitute mocks; handlers are tested in isolation. Expected failures are `Result` errors, never exceptions (see [CQRS & MediatR](../01-architecture/cqrs-and-mediatr.md)).
+All dependencies are NSubstitute mocks; handlers are tested in isolation. Expected failures are `Result` errors, never exceptions (see [CQRS & Mediator](../01-architecture/cqrs-and-mediator.md)).
 
 ### 5.1 Auth command handlers
 
@@ -205,17 +205,17 @@ All dependencies are NSubstitute mocks; handlers are tested in isolation. Expect
 
 Validators must mirror — not replace — the Domain guards: validators reject malformed input cheaply (400), the aggregate remains the authority (409/422).
 
-### 5.5 MediatR pipeline behaviors
+### 5.5 Cortex.Mediator pipeline behaviors
 
 | Test | Asserts |
 | --- | --- |
-| `ValidationBehavior_InvalidCommand_ShortCircuitsWithoutCallingHandler` | `ValidationException` thrown; handler substitute `DidNotReceive()` any call |
-| `ValidationBehavior_ValidCommand_CallsHandlerOnce` | Pass-through verified |
-| `UnitOfWorkBehavior_CommandSuccess_SavesThenDispatchesDomainEvents` | `SaveChangesAsync` happens **before** `Publish` of domain events; both received once |
-| `UnitOfWorkBehavior_HandlerFailure_DoesNotSaveOrDispatch` | No commit on error result or exception |
-| `UnitOfWorkBehavior_Query_DoesNotSaveOrDispatch` | Behavior applies to commands only |
-| `PerformanceBehavior_HandlerAboveThreshold_LogsWarning` | Slow-handler substitute; warning contains handler name, no payload |
-| `LoggingBehavior_CorrelationId_PropagatedToLogContext` | Log scope carries the correlation id; payload properties never include password or token fields |
+| `ValidationCommandBehavior_InvalidCommand_ShortCircuitsWithoutCallingHandler` | `ValidationException` thrown; handler substitute `DidNotReceive()` any call |
+| `ValidationCommandBehavior_ValidCommand_CallsHandlerOnce` | Pass-through verified |
+| `UnitOfWorkCommandPipelineBehavior_CommandSuccess_SavesThenDispatchesDomainEvents` | `SaveChangesAsync` happens **before** `PublishAsync` of domain events; both received once |
+| `UnitOfWorkCommandPipelineBehavior_HandlerFailure_DoesNotSaveOrDispatch` | No commit on error result or exception |
+| `UnitOfWorkCommandPipelineBehavior_Query_DoesNotSaveOrDispatch` | The behavior is registered on the command pipeline only — a query dispatch never invokes it |
+| `PerformanceCommandPipelineBehavior_HandlerAboveThreshold_LogsWarning` | Slow-handler substitute; warning contains handler name, no payload |
+| `LoggingCommandBehavior_CorrelationId_PropagatedToLogContext` | Log scope carries the correlation id; payload properties never include password or token fields |
 
 ## 6. API Integration Tests (`TicTacToe.Api.IntegrationTests`)
 

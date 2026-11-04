@@ -2,7 +2,7 @@
 
 *This document describes the high-level architecture of the Multiplayer Tic-Tac-Toe platform: system context, containers, key runtime sequences, the technology stack, cross-cutting concerns, and the deployment and scalability outlook.*
 
-Parent document: [PRD](../00-product/PRD.md) · Related: [Clean Architecture & DDD](clean-architecture-ddd.md) · [CQRS & MediatR](cqrs-and-mediatr.md) · [Real-time & SignalR](../02-backend/realtime-signalr.md) · [Deployment](../06-devops/docker-and-environments.md)
+Parent document: [PRD](../00-product/PRD.md) · Related: [Clean Architecture & DDD](clean-architecture-ddd.md) · [CQRS & Mediator](cqrs-and-mediator.md) · [Real-time & SignalR](../02-backend/realtime-signalr.md) · [Deployment](../06-devops/docker-and-environments.md)
 
 ---
 
@@ -41,7 +41,7 @@ C4Container
 
     System_Boundary(platform, "Multiplayer Tic-Tac-Toe Platform") {
         Container(spa, "Angular SPA", "Angular 22 (standalone, signals, zoneless), Tailwind CSS 4", "Login, Register, Lobby and Game pages; plays moves and renders broadcasts")
-        Container(api, "ASP.NET Core API", ".NET 10, Clean Architecture, MediatR, SignalR", "REST endpoints for auth and game commands/queries; GameHub for presence and push; hosts DisconnectGraceService")
+        Container(api, "ASP.NET Core API", ".NET 10, Clean Architecture, Cortex.Mediator, SignalR", "REST endpoints for auth and game commands/queries; GameHub for presence and push; hosts DisconnectGraceService")
         ContainerDb(db, "PostgreSQL", "PostgreSQL 18", "Identity users, player profiles, refresh tokens, games, moves")
     }
 
@@ -70,7 +70,7 @@ Modernized on 2026-11-04 from the original document's §6.2 table (.NET 8 / EF C
 | Runtime / language | .NET 10 (LTS), C# 14 | [ADR-0011](adr/0011-latest-stable-stack.md) |
 | Web framework | ASP.NET Core Web API (controllers) | — |
 | Architecture | Clean Architecture + DDD tactical patterns + CQRS | [ADR-0001](adr/0001-clean-architecture-and-ddd.md) |
-| Mediator | MediatR (latest) — commands, queries, notifications, pipeline behaviors | [ADR-0002](adr/0002-mediatr-for-cqrs.md) |
+| Mediator | Cortex.Mediator 3.1.2 — commands, queries, notifications, separate command/query pipelines | [ADR-0013](adr/0013-cortex-mediator.md) |
 | Validation | FluentValidation (pipeline `ValidationBehavior`) | — |
 | Mapping | Mapster (manual mapping inside Domain) | [ADR-0010](adr/0010-mapster-mapping.md) |
 | ORM / DB access | EF Core 10 + Npgsql | [ADR-0003](adr/0003-postgresql-ef-core-npgsql.md) |
@@ -95,7 +95,7 @@ The canonical write path: a REST command mutates the aggregate, commits, then do
 sequenceDiagram
     actor P as Player (SPA)
     participant C as GamesController
-    participant M as MediatR pipeline
+    participant M as Cortex.Mediator pipeline
     participant H as MakeMoveHandler
     participant G as Game aggregate
     participant UO as UnitOfWork

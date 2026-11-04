@@ -2,7 +2,7 @@
 
 *The canonical contract of the Multiplayer Tic-Tac-Toe REST API — conventions, per-endpoint reference with validation rules and JSON examples, DTO schemas, the error-code catalog, OpenAPI tooling, versioning and pagination.*
 
-Parent document: [PRD](../00-product/PRD.md) · Related: [Real-time & SignalR](realtime-signalr.md) · [Auth, Identity & JWT](auth-identity-jwt.md) · [Coding standards](coding-standards.md) · [CQRS & MediatR](../01-architecture/cqrs-and-mediatr.md) · [Security](../05-quality/security.md) · [Testing strategy](../05-quality/testing-strategy.md)
+Parent document: [PRD](../00-product/PRD.md) · Related: [Real-time & SignalR](realtime-signalr.md) · [Auth, Identity & JWT](auth-identity-jwt.md) · [Coding standards](coding-standards.md) · [CQRS & Mediator](../01-architecture/cqrs-and-mediator.md) · [Security](../05-quality/security.md) · [Testing strategy](../05-quality/testing-strategy.md)
 
 ---
 

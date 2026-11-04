@@ -107,7 +107,7 @@ With two developers the plan splits naturally along the layer boundary: one trac
 | Frontend | None (API-first; only shared TypeScript models if convenient) |
 | Database | Migrations: `games`, `moves` (owned collection, unique `(game_id, position)` and `(game_id, move_number)`, CHECK 0..8), `games(status, created_at_utc DESC)` index, partial unique indexes enforcing one active game per player |
 | DevOps | Migrations applied on container startup in Development |
-| Docs | [clean-architecture-ddd](../01-architecture/clean-architecture-ddd.md), [cqrs-and-mediatr](../01-architecture/cqrs-and-mediatr.md), game endpoints in [api-spec](../02-backend/api-spec.md), [schema-and-erd](../03-database/schema-and-erd.md), [migrations-and-indexes](../03-database/migrations-and-indexes.md), [concurrency](../03-database/concurrency.md) |
+| Docs | [clean-architecture-ddd](../01-architecture/clean-architecture-ddd.md), [cqrs-and-mediator](../01-architecture/cqrs-and-mediator.md), game endpoints in [api-spec](../02-backend/api-spec.md), [schema-and-erd](../03-database/schema-and-erd.md), [migrations-and-indexes](../03-database/migrations-and-indexes.md), [concurrency](../03-database/concurrency.md) |
 
 **Deliverables:** a full game playable with an HTTP client: create → join → alternate moves → win/draw result, with every invalid interaction rejected by the domain.
 

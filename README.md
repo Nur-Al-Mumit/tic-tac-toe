@@ -2,7 +2,7 @@
 
 A real-time, two-player Tic-Tac-Toe platform with a chess.com-inspired experience: sign up in seconds, see who is online, and play a fast, animated game against another real person.
 
-**Stack:** .NET 10 (LTS) · Clean Architecture + DDD · CQRS with MediatR · ASP.NET Core Identity + JWT · EF Core 10 + PostgreSQL 18 · SignalR · Angular 22 (zoneless, signals) · Tailwind CSS 4 · Docker · GitHub Actions. Backend tests: NUnit.
+**Stack:** .NET 10 (LTS) · Clean Architecture + DDD · CQRS with Cortex.Mediator · ASP.NET Core Identity + JWT · EF Core 10 + PostgreSQL 18 · SignalR · Angular 22 (zoneless, signals) · Tailwind CSS 4 · Docker · GitHub Actions. Backend tests: NUnit.
 
 ## Documentation
 

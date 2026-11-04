@@ -13,12 +13,12 @@ Most Tic-Tac-Toe "failures" are ordinary game outcomes, not exceptional conditio
 Handlers return **`Result<T>`** for every use case; **expected failures are values, exceptions are for the unexpected**:
 
 - Shape: `Result` / `Result<T>` with `IsSuccess`, `IsFailure`, `Value` (T) and `Error`; `Error` is `record Error(string Code, string Message)`. Factories: `Result.Success(value)`, `Result.Failure(error)`.
-- Domain exceptions are thrown inside the aggregate (idiomatic guard clauses) and **caught at the handler boundary**, converted to `Result.Failure` with dot-namespaced codes (`Game.Full`, `Game.NotYourTurn`, `Auth.InvalidCredentials`, …) per the [error code conventions](../cqrs-and-mediatr.md#41-error-code-conventions).
+- Domain exceptions are thrown inside the aggregate (idiomatic guard clauses) and **caught at the handler boundary**, converted to `Result.Failure` with dot-namespaced codes (`Game.Full`, `Game.NotYourTurn`, `Auth.InvalidCredentials`, …) per the [error code conventions](../cqrs-and-mediator.md#41-error-code-conventions).
 - One `ProblemDetails` factory in the Api layer maps `Error.Code` → HTTP status + ProblemDetails body; controllers never switch on codes.
 - Unexpected exceptions (DB down, bugs, exhausted concurrency retry) propagate to `ExceptionHandlingMiddleware` → 500; they are never converted to `Result`.
 - `ValidationBehavior`'s `ValidationException` → 400 with per-field errors stays a real exception (it is thrown before any handler runs).
 
-Canonical error-to-HTTP examples (full table in the [CQRS & MediatR](../cqrs-and-mediatr.md#41-error-code-conventions) doc):
+Canonical error-to-HTTP examples (full table in the [CQRS & MediatR](../cqrs-and-mediator.md#41-error-code-conventions) doc):
 
 | `Error.Code` | HTTP | Example trigger |
 | --- | --- | --- |
@@ -54,12 +54,12 @@ Canonical error-to-HTTP examples (full table in the [CQRS & MediatR](../cqrs-and
 ## References
 
 - [PRD](../../00-product/PRD.md) (US-07 acceptance criteria, FR-06/07/08)
-- [CQRS & MediatR](../cqrs-and-mediatr.md) §4 — full pattern and error-code table
+- [CQRS & MediatR](../cqrs-and-mediator.md) §4 — full pattern and error-code table
 - [API spec](../../02-backend/api-spec.md) — code → HTTP status mapping
 - [ADR-0002 MediatR](0002-mediatr-for-cqrs.md) — pipeline that carries this contract
 - [ADR-0006 xmin](0006-optimistic-concurrency-xmin.md) — the `Game.ConcurrencyConflict` residual case
 
 ## Assumptions
 
-- Every error code introduced must be added to the cqrs-and-mediatr table and the API spec in the same change.
+- Every error code introduced must be added to the cqrs-and-mediator table and the API spec in the same change.
 - The client keys its message catalog on `Error.Code`, never on `Error.Message` (which is developer-facing English).

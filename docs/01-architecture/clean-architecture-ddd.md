@@ -2,7 +2,7 @@
 
 *This document specifies the dependency rule, the per-project and folder-by-folder solution layout, the DDD tactical patterns applied to the Game bounded context, and how the layering is enforced by tests.*
 
-Parent document: [PRD](../00-product/PRD.md) · Related: [System architecture](system-architecture.md) · [CQRS & MediatR](cqrs-and-mediatr.md) · [Coding standards](../02-backend/coding-standards.md) · Decision record: [ADR-0001](adr/0001-clean-architecture-and-ddd.md)
+Parent document: [PRD](../00-product/PRD.md) · Related: [System architecture](system-architecture.md) · [CQRS & Mediator](cqrs-and-mediator.md) · [Coding standards](../02-backend/coding-standards.md) · Decision record: [ADR-0001](adr/0001-clean-architecture-and-ddd.md)
 
 ---
 
@@ -129,7 +129,7 @@ src/
     Players/
       GetOnlinePlayers/ (GetOnlinePlayersQuery + Handler)
       OnlinePlayerDto.cs
-    DependencyInjection.cs         — AddApplication(): MediatR, validators, behaviors, Mapster
+    DependencyInjection.cs         — AddApplication(): AddCortexMediator, validators, behaviors, Mapster
   TicTacToe.Infrastructure/
     Persistence/
       AppDbContext.cs              — IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid> + DbSets
@@ -248,7 +248,7 @@ sequenceDiagram
     participant I as DomainEventInterceptor
     participant UO as UnitOfWork
     participant DB as PostgreSQL
-    participant M as MediatR
+    participant M as Cortex.Mediator
     participant NH as INotificationHandler (Application)
     participant N as IGameNotifier (Infrastructure)
 
@@ -282,7 +282,7 @@ The dependency rule is guarded mechanically in `TicTacToe.Api.IntegrationTests` 
 | Rule | Assertion |
 | --- | --- |
 | Domain purity | `Types.In(TicTacToe.Domain)` reference no other project and no `Microsoft.*`/`Infra` packages — only BCL |
-| Application isolation | `TicTacToe.Application` may reference only `TicTacToe.Domain` (plus MediatR/FluentValidation/Mapster package types) |
+| Application isolation | `TicTacToe.Application` may reference only `TicTacToe.Domain` (plus Cortex.Mediator/FluentValidation/Mapster package types) |
 | Infrastructure inward-only | `TicTacToe.Infrastructure` references only `TicTacToe.Application` and `TicTacToe.Domain` — never `TicTacToe.Api` |
 | Api not referenced | no type in any layer references `TicTacToe.Api` |
 | Controllers stay thin | `ApiController` types use `IMediator` and return `IActionResult`; they must not reference `AppDbContext`, repositories or Domain aggregates |

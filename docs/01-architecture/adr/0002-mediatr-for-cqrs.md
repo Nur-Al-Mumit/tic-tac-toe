@@ -1,6 +1,8 @@
 # ADR-0002: MediatR as the in-process mediator for CQRS
 
-| Status | Accepted — 2026-11-04 |
+> **Superseded (2026-11-04):** the mediator is now **Cortex.Mediator** — see [ADR-0013](0013-cortex-mediator.md). This record is kept as history; the pipeline-concern design below (Logging → Validation → UnitOfWork → Performance) carries over unchanged.
+
+| Status | **Superseded** by [ADR-0013](0013-cortex-mediator.md) — 2026-11-04 |
 | --- | --- |
 | Scope | Application-layer dispatch, pipeline behaviors, notification handling |
 
@@ -54,7 +56,7 @@ The fixed behavior order and why each position matters:
 ## References
 
 - [PRD](../../00-product/PRD.md) (§7 Technical Blueprint — MediatR row)
-- [CQRS & MediatR](../cqrs-and-mediatr.md) — pipeline details, sketches, event flow
+- [CQRS & Mediator](../cqrs-and-mediator.md) — pipeline details, sketches, event flow
 - [Clean Architecture & DDD](../clean-architecture-ddd.md) — event dispatch design
 - [ADR-0009 Result pattern](0009-result-pattern-expected-failures.md) — how handlers report expected failures
 - [ADR-0011 Latest stable stack](0011-latest-stable-stack.md)

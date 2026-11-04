@@ -12,7 +12,7 @@ Players submit moves, joins, cancels and forfeits; both players plus the lobby m
 
 **All state mutations travel over REST** (`POST /api/v1/games`, `/{id}/join`, `/{id}/moves`, `/{id}/cancel`, `/{id}/leave`); **SignalR (`/hubs/game`) is used for push only, not state mutation — the sole exception being presence** (connection/disconnection tracking, group joins):
 
-- Moves: `POST /api/v1/games/{id}/moves` with `{ position }` → 200 `GameDto`, or RFC 7807 `ProblemDetails` (409 not your turn, 422 invalid). Validation (FluentValidation), authorization (participant check) and domain rules run in the same MediatR pipeline as every other command.
+- Moves: `POST /api/v1/games/{id}/moves` with `{ position }` → 200 `GameDto`, or RFC 7807 `ProblemDetails` (409 not your turn, 422 invalid). Validation (FluentValidation), authorization (participant check) and domain rules run in the same Cortex.Mediator command pipeline as every other command.
 - Results of any command are broadcast by domain-event notification handlers through `IGameNotifier` to groups `lobby` and `game-{id}` (`GameStarted`, `MoveMade`, `GameFinished`, `GameRemoved`, `PresenceChanged`, `OpponentConnection`).
 - Client→server hub methods are limited to presence/room concerns: `JoinGameRoom(gameId)` (validated server-side as a participant), `LeaveGameRoom(gameId)`; the connect/disconnect lifecycle updates presence and grace timers.
 - The authoritative response to the mover is the REST `GameDto`; the SignalR echo is ignored by the actor's client (deduplicated by game version).

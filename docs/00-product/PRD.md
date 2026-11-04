@@ -6,7 +6,7 @@
 | --- | --- |
 | **Version** | 1.1 (MVP) |
 | **Status** | Approved for development |
-| **Stack** | .NET 10 · Clean Architecture · DDD · CQRS (MediatR) · Identity · PostgreSQL 18 · SignalR · Angular 22 (zoneless) · Tailwind CSS 4 |
+| **Stack** | .NET 10 · Clean Architecture · DDD · CQRS (Cortex.Mediator) · Identity · PostgreSQL 18 · SignalR · Angular 22 (zoneless) · Tailwind CSS 4 |
 | **Delivery plan** | M0–M6, milestone-based with no calendar schedule (see [roadmap](roadmap.md)) |
 
 ---
@@ -169,13 +169,13 @@ Design principles, tokens, page specs and animation details live in the frontend
 
 ## 7. Technical Blueprint Summary
 
-> **Stack modernization (2026-11-04):** the original technical documentation §6.2 pinned .NET 8 / EF Core 8 / PostgreSQL 16 / Angular 17+. Per stakeholder decision, this project targets the **latest stable stack** below; the original document's §6.2 has since been aligned to this decision (its v1.1 update, archived at [00-product/archive](archive/original-technical-documentation.md)). Domain design, API contracts and database design are unchanged. Recorded in [ADR-0011](../01-architecture/adr/0011-latest-stable-stack.md) and [ADR-0012](../01-architecture/adr/0012-nunit-test-framework.md).
+> **Stack modernization (2026-11-04):** the original technical documentation §6.2 pinned .NET 8 / EF Core 8 / PostgreSQL 16 / Angular 17+. Per stakeholder decision, this project targets the **latest stable stack** below; the original document's §6.2 has since been aligned to this decision (its v1.1 update, archived at [00-product/archive](archive/original-technical-documentation.md)). Domain design, API contracts and database design are unchanged. Recorded in [ADR-0011](../01-architecture/adr/0011-latest-stable-stack.md) and [ADR-0012](../01-architecture/adr/0012-nunit-test-framework.md); the in-process mediator is Cortex.Mediator per [ADR-0013](../01-architecture/adr/0013-cortex-mediator.md).
 
 | Layer | Choice |
 | --- | --- |
 | Backend | .NET 10 (LTS) / ASP.NET Core Web API, C# 14 |
 | Architecture | Clean Architecture, DDD tactical patterns, CQRS |
-| Mediator | MediatR (latest) — commands, queries, notifications, pipeline behaviors |
+| Mediator | Cortex.Mediator 3.1.2 — commands, queries, notifications, pipeline behaviors |
 | Validation | FluentValidation |
 | Mapping | Mapster (manual mapping in Domain; no mapping magic there) |
 | ORM | EF Core 10 + Npgsql provider |
@@ -191,7 +191,7 @@ Design principles, tokens, page specs and animation details live in the frontend
 | Database | PostgreSQL 18 |
 | Containers | Docker, docker-compose, GitHub Actions CI |
 
-Layer rules, folder structure and the dependency diagram: [system architecture](../01-architecture/system-architecture.md) and [clean architecture & DDD](../01-architecture/clean-architecture-ddd.md). Application layer patterns: [CQRS & MediatR](../01-architecture/cqrs-and-mediatr.md).
+Layer rules, folder structure and the dependency diagram: [system architecture](../01-architecture/system-architecture.md) and [clean architecture & DDD](../01-architecture/clean-architecture-ddd.md). Application layer patterns: [CQRS & MediatR](../01-architecture/cqrs-and-mediator.md).
 
 ## 8. Delivery Plan (M0–M6)
 

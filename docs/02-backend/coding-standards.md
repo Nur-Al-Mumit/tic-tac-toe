@@ -1,8 +1,8 @@
 # Backend Coding Standards
 
-*The engineering standards for the backend — C# 14 conventions, per-layer rules, error-handling contract, MediatR usage, EF Core discipline, logging rules, analyzer/formatting setup, and the commit-message and pull-request checklists.*
+*The engineering standards for the backend — C# 14 conventions, per-layer rules, error-handling contract, Cortex.Mediator usage, EF Core discipline, logging rules, analyzer/formatting setup, and the commit-message and pull-request checklists.*
 
-Parent document: [PRD](../00-product/PRD.md) · Related: [Clean Architecture & DDD](../01-architecture/clean-architecture-ddd.md) · [CQRS & MediatR](../01-architecture/cqrs-and-mediatr.md) · [API spec](api-spec.md) · [Auth, Identity & JWT](auth-identity-jwt.md) · [Testing strategy](../05-quality/testing-strategy.md) · [CI/CD](../06-devops/ci-cd.md)
+Parent document: [PRD](../00-product/PRD.md) · Related: [Clean Architecture & DDD](../01-architecture/clean-architecture-ddd.md) · [CQRS & Mediator](../01-architecture/cqrs-and-mediator.md) · [API spec](api-spec.md) · [Auth, Identity & JWT](auth-identity-jwt.md) · [Testing strategy](../05-quality/testing-strategy.md) · [CI/CD](../06-devops/ci-cd.md)
 
 ---
 
@@ -54,8 +54,8 @@ Dependencies point inward only ([clean architecture §1](../01-architecture/clea
 
 | Project | Allowed | Forbidden |
 | --- | --- | --- |
-| `TicTacToe.Domain` | Pure C#/BCL only: aggregates, value objects, domain events, domain exceptions, repository interfaces | **No project references; no NuGet packages** (not even MediatR/EF); no DTOs, no HTTP/DB/serialization concepts |
-| `TicTacToe.Application` | References Domain; MediatR, FluentValidation, Mapster; abstractions (`IUnitOfWork`, `ICurrentUser`, `IIdentityService`, `ITokenService`, `IPresenceTracker`, `IGameNotifier`, `IDateTimeProvider`, `IReadDbContext`); DTOs; validators; behaviors | **No EF Core / Npgsql types in public contracts** (repositories speak aggregates; persistence lives behind Infrastructure implementations); no SignalR, no Identity types; no `HttpContext` |
+| `TicTacToe.Domain` | Pure C#/BCL only: aggregates, value objects, domain events, domain exceptions, repository interfaces | **No project references; no NuGet packages** (not even Cortex.Mediator/EF); no DTOs, no HTTP/DB/serialization concepts |
+| `TicTacToe.Application` | References Domain; Cortex.Mediator, FluentValidation, Mapster; abstractions (`IUnitOfWork`, `ICurrentUser`, `IIdentityService`, `ITokenService`, `IPresenceTracker`, `IGameNotifier`, `IDateTimeProvider`, `IReadDbContext`); DTOs; validators; behaviors | **No EF Core / Npgsql types in public contracts** (repositories speak aggregates; persistence lives behind Infrastructure implementations); no SignalR, no Identity types; no `HttpContext` |
 | `TicTacToe.Infrastructure` | References Application + Domain; EF Core + Npgsql, Identity, JWT, SignalR implementations, hosted services | **No controllers, no hubs**; never references `TicTacToe.Api`; no business rules — only adaptation of Application contracts |
 | `TicTacToe.Api` | References Application (+ Infrastructure for DI composition only); controllers, `GameHub`, middleware, auth/rate-limit/OpenAPI/Serilog setup | **Thin controllers**: a `Send` to `IMediator` and a mapping of `Result` to an action — no repositories, no `DbContext`, no aggregates, no business logic |
 
@@ -80,7 +80,7 @@ Rules:
 4. **Broadcast failures never fail the request**: notification-handler exceptions are logged and the command still returns success (clients resync via `GET /games/active`).
 5. **Validators validate shape; the aggregate is the authority on rules.** Where the API contract assigns a non-400 status to a rule (position range → 422), the rule belongs to the aggregate/`Result` path, not to FluentValidation — see [api-spec §2.12](api-spec.md#212-post-gamesidmoves--make-a-move).
 
-## 4. MediatR Usage
+## 4. Mediator Usage (Cortex.Mediator)
 
 | Rule | Detail |
 | --- | --- |
@@ -88,10 +88,10 @@ Rules:
 | One file trio per use case | `<Request>.cs`, `<Request>Handler.cs`, `<Request>Validator.cs` in a feature folder (`Application/Games/MakeMove/`) — findable by folder, not search |
 | A validator per command | Every command has a FluentValidation validator even if trivial today; queries validate only when they accept input (e.g. `status` filter) |
 | Handlers do the orchestration only | Load aggregate → call behavior method → map to DTO → return `Result`; authorization checks against `ICurrentUser` happen before touching the aggregate; no HTTP concepts anywhere near handlers |
-| Controllers and hub stay dumb | Controller = bind → `Send` → map `Result` to action; `GameHub` = presence + group logic only. Any `if` that encodes a game rule in a controller/hub is a bug |
-| Pipeline order is fixed | `LoggingBehavior` → `ValidationBehavior` → `UnitOfWorkBehavior` → `PerformanceBehavior` ([cqrs-and-mediatr §3](../01-architecture/cqrs-and-mediatr.md#3-mediatr-pipeline-behaviors)); behaviors are generic — no per-use-case pipelines |
+| Controllers and hub stay dumb | Controller = bind → `SendAsync`/`QueryAsync` → map `Result` to action; `GameHub` = presence + group logic only. Any `if` that encodes a game rule in a controller/hub is a bug |
+| Pipeline order is fixed | `LoggingCommandBehavior` → `ValidationCommandBehavior` → `UnitOfWorkCommandPipelineBehavior` → `PerformanceCommandPipelineBehavior` ([cqrs-and-mediator §3](../01-architecture/cqrs-and-mediator.md#3-mediator-pipeline-cortexmediator)); behaviors are generic — no per-use-case pipelines |
 | Commit in one place | `UnitOfWorkBehavior` is the only `SaveChangesAsync` caller on the command path (queries never save); domain events dispatch post-commit from the same behavior |
-| No `Send` from handlers | Handlers do not send commands to other handlers; cross-cutting reactions to domain events are `INotificationHandler`s |
+| No `SendAsync` from handlers | Handlers do not send commands to other handlers; cross-cutting reactions to domain events are `INotificationHandler`s |
 
 ## 5. EF Core Rules
 

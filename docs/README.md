@@ -16,12 +16,12 @@ Working in the code? Read [agents/AGENTS.md](agents/AGENTS.md) first — it carr
 | | [archive/original-technical-documentation](00-product/archive/original-technical-documentation.md) | The frozen v1.1 originating document (single-file overview); [PRD.md](00-product/PRD.md) supersedes it. |
 | **01-architecture** | [system-architecture](01-architecture/system-architecture.md) | C4 context/container views, runtime sequences (move, join race, forfeit/reconnect), stack, cross-cutting concerns, scalability. |
 | | [clean-architecture-ddd](01-architecture/clean-architecture-ddd.md) | Dependency rule, file-level folder spec per project, DDD tactical mapping, invariants, domain events, NetArchTest enforcement. |
-| | [cqrs-and-mediatr](01-architecture/cqrs-and-mediatr.md) | Command/query catalog, pipeline behaviors (Logging → Validation → UnitOfWork → Performance), `Result<T>`, event→broadcast flow. |
+| | [cqrs-and-mediator](01-architecture/cqrs-and-mediator.md) | Command/query catalog, pipeline behaviors (Logging → Validation → UnitOfWork → Performance), `Result<T>`, event→broadcast flow. |
 | | [adr/](01-architecture/adr/0001-clean-architecture-and-ddd.md) | 12 decision records (ADRs 0001–0012) with context, alternatives, and consequences. |
 | **02-backend** | [api-spec](02-backend/api-spec.md) | Full REST contract: per-endpoint reference, DTO schemas, canonical error-code registry, OpenAPI/Scalar, versioning. |
 | | [realtime-signalr](02-backend/realtime-signalr.md) | Hub design: groups, event catalog with payloads, lifecycle sequences, grace/forfeit timers, reconnect/resync, scale-out path. |
 | | [auth-identity-jwt](02-backend/auth-identity-jwt.md) | Identity setup, JWT claims/validation, refresh rotation with reuse detection, lockout, token storage strategy. |
-| | [coding-standards](02-backend/coding-standards.md) | C# 14 conventions, layer rules, error-handling contract, MediatR/EF Core rules, analyzers, PR checklist. |
+| | [coding-standards](02-backend/coding-standards.md) | C# 14 conventions, layer rules, error-handling contract, Cortex.Mediator/EF Core rules, analyzers, PR checklist. |
 | **03-database** | [schema-and-erd](03-database/schema-and-erd.md) | ERD, per-table column specs, enum mappings, constraint catalog, EF Core mapping notes. |
 | | [migrations-and-indexes](03-database/migrations-and-indexes.md) | Migration workflow per environment, index catalog with DDL and the queries each index serves, retention. |
 | | [concurrency](03-database/concurrency.md) | xmin optimistic concurrency, reload-once pattern, join-race and forfeit-race sequences, unique constraints as last line of defense. |
@@ -53,7 +53,7 @@ Working in the code? Read [agents/AGENTS.md](agents/AGENTS.md) first — it carr
 | Role | Read first | Then |
 | --- | --- | --- |
 | Product | [PRD](00-product/PRD.md), [user-stories](00-product/user-stories.md), [roadmap](00-product/roadmap.md) | [pages-and-flows](04-frontend/pages-and-flows.md) |
-| Backend | [clean-architecture-ddd](01-architecture/clean-architecture-ddd.md), [cqrs-and-mediatr](01-architecture/cqrs-and-mediatr.md), [api-spec](02-backend/api-spec.md), [coding-standards](02-backend/coding-standards.md) | [realtime-signalr](02-backend/realtime-signalr.md), [auth-identity-jwt](02-backend/auth-identity-jwt.md), [concurrency](03-database/concurrency.md) |
+| Backend | [clean-architecture-ddd](01-architecture/clean-architecture-ddd.md), [cqrs-and-mediator](01-architecture/cqrs-and-mediator.md), [api-spec](02-backend/api-spec.md), [coding-standards](02-backend/coding-standards.md) | [realtime-signalr](02-backend/realtime-signalr.md), [auth-identity-jwt](02-backend/auth-identity-jwt.md), [concurrency](03-database/concurrency.md) |
 | Database | [schema-and-erd](03-database/schema-and-erd.md), [migrations-and-indexes](03-database/migrations-and-indexes.md), [concurrency](03-database/concurrency.md) | [ADR-0006](01-architecture/adr/0006-optimistic-concurrency-xmin.md), [ADR-0003](01-architecture/adr/0003-postgresql-ef-core-npgsql.md) |
 | UI/UX | [ux-ui-design-system](04-frontend/ux-ui-design-system.md), [pages-and-flows](04-frontend/pages-and-flows.md), [animations](04-frontend/animations.md) | [PRD §6](00-product/PRD.md#6-experience-summary), [user-stories](00-product/user-stories.md) |
 | Angular | [angular-architecture](04-frontend/angular-architecture.md), [ux-ui-design-system](04-frontend/ux-ui-design-system.md) | [api-spec](02-backend/api-spec.md), [realtime-signalr](02-backend/realtime-signalr.md) |
