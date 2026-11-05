@@ -2,6 +2,8 @@ using Scalar.AspNetCore;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using TicTacToe.Api.Middleware;
+using TicTacToe.Api.Hubs;
+using TicTacToe.Api.Realtime;
 using TicTacToe.Api.Services;
 using TicTacToe.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +29,8 @@ try
     builder.Services.AddHealthChecks()
         .AddDbContextCheck<AppDbContext>("database", tags: ["ready"]);
     builder.Services.AddHttpContextAccessor();
+    builder.Services.AddScoped<IGameNotifier, SignalRGameNotifier>();
+    builder.Services.AddSignalR();
     builder.Services.AddScoped<ICurrentUser, CurrentUser>();
     builder.Services.AddCors(options => options.AddPolicy("Client", policy => policy
         .WithOrigins((builder.Configuration["Cors:Origins"] ?? "http://localhost:4200").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
@@ -58,6 +62,7 @@ try
     }
 
     app.MapControllers();
+    app.MapHub<GameHub>("/hubs/game");
     app.MapHealthChecks("/health");
 
     Log.Information("TicTacToe.Api starting");

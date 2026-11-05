@@ -38,7 +38,7 @@ public class GameCommandHandlerTests
                 .Select(id => id == Ids.Host ? new PlayerProfile(id, "host_01", Now) : new PlayerProfile(id, "opp_02", Now))
                 .ToList());
 
-        return new Ctx(games, profiles, unitOfWork, read, currentUser, time, new GameDtoLoader(profiles));
+        return new Ctx(games, profiles, unitOfWork, read, currentUser, time, new GameDtoLoader(read, profiles));
     }
 
     private static Game StartedGame()

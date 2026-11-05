@@ -45,6 +45,23 @@ public static class DependencyInjection
             .AddJwtBearer(options =>
             {
                 options.MapInboundClaims = false;
+                // SignalR WebSockets cannot send an Authorization header: read the JWT from
+                // the access_token query string on the hub path (realtime-signalr §2).
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        if (!string.IsNullOrEmpty(accessToken)
+                            && context.Request.Path.StartsWithSegments("/hubs"))
+                        {
+                            context.Token = accessToken;
+                        }
+
+                        return Task.CompletedTask;
+                    },
+                };
+
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
