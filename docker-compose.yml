@@ -39,6 +39,16 @@ services:
       retries: 10
       start_period: 15s
 
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
   pgadmin:
     image: dpage/pgadmin4:9.19
     profiles: ["tools"]
