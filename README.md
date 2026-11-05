@@ -26,4 +26,13 @@ client/    Angular 22 SPA                                                       
 
 ## Status
 
-Documentation phase complete (2026-11-04). The first build is **V1 "Game Live"** — authentication plus a rules-complete live game ([v1-scope](docs/00-product/v1-scope.md)), delivered in milestone order ([AGENTS.md](docs/agents/AGENTS.md)). M0 Foundation is next: solution skeleton, Docker, CI, and design tokens.
+**V1 "Game Live" is implemented** (2026-11-05): register/login with rotating JWT refresh tokens, the rules-complete Game aggregate (all 8 win lines, draw, forfeit, race-safe join via xmin + reload-once), REST game API, live SignalR game events, lobby (create/join/cancel) and the animated game board — exactly the [V1 scope](docs/00-product/v1-scope.md); V1.1 adds presence, live lobby, auto-forfeit and hardening on the same seams.
+
+Verified locally: solution builds with 0 warnings (warnings-as-errors), 68 NUnit tests + 17 vitest specs green. The Testcontainers integration suite (auth lifecycle, full playthrough, simultaneous join race, two-client SignalR) runs in GitHub Actions CI.
+
+```bash
+# run everything locally
+dotnet build TicTacToe.slnx && dotnet test tests/TicTacToe.Domain.UnitTests && dotnet test tests/TicTacToe.Application.UnitTests
+cd client && npm ci && npm test -- --watch=false && npm run build
+docker compose up --build   # postgres 18 + api (:8081) + client (:8080)
+```
