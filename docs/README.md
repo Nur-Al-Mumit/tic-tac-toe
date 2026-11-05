@@ -11,6 +11,7 @@ Working in the code? Read [agents/AGENTS.md](agents/AGENTS.md) first — it carr
 | Section | Document | What it covers |
 | --- | --- | --- |
 | **00-product** | [PRD](00-product/PRD.md) | Vision, scope, personas, user stories, functional/non-functional requirements, flows, delivery plan — the source of truth. |
+| | [v1-scope](00-product/v1-scope.md) | The first build's boundary — "Game Live": auth + live game in; presence, live lobby, auto-forfeit, hardening out; FR/US and milestone mappings. |
 | | [user-stories](00-product/user-stories.md) | US-01..US-13 expanded with Gherkin acceptance criteria, milestone + FR traceability matrix. |
 | | [roadmap](00-product/roadmap.md) | Milestones M0–M6: scope by area, exit criteria, dependencies, non-goals guard, post-MVP outlook — no calendar schedule. |
 | | [archive/original-technical-documentation](00-product/archive/original-technical-documentation.md) | The frozen v1.1 originating document (single-file overview); [PRD.md](00-product/PRD.md) supersedes it. |

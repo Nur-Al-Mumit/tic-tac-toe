@@ -6,7 +6,7 @@
 
 This file converts the PRD and the docs tree into a safe, repeatable workflow:
 
-1. Read the [PRD](../00-product/PRD.md) first — it is the product source of truth and wins over every other document, including this one.
+1. Read the [PRD](../00-product/PRD.md) first — it is the product source of truth and wins over every other document, including this one. The first build's boundary is the [V1 scope](../00-product/v1-scope.md): auth + the live game, nothing more.
 2. Read this manual, especially the [Golden Rules](#golden-rules) and the [Build Order (M0 → M6)](#build-order-m0--m6).
 3. Locate your milestone in the build order, re-read the docs listed for it, then implement.
 4. If you own a discipline (product, architecture, database, UI/UX, frontend, QA/security, DevOps), also load your role prompt from [prompts/](prompts/).
@@ -69,7 +69,7 @@ Multiplayer Tic-Tac-Toe is a real-time, two-player Tic-Tac-Toe platform with a c
 
 ## Build Order (M0 → M6)
 
-Milestones run in order; with two agents, M4 and M5 can proceed in parallel after M3. There are no time estimates — order and dependencies drive delivery.
+Milestones run in order; with two agents, M4 and M5 can proceed in parallel after M3. There are no time estimates — order and dependencies drive delivery. **For the first build, implement only the V1 "Game Live" slices** defined in [v1-scope.md](../00-product/v1-scope.md) — the deferred slices (presence, live lobby, auto-forfeit, hardening) are NOT built yet; their specs stay in the docs for when the project resumes.
 
 ```mermaid
 flowchart LR
@@ -233,6 +233,7 @@ Per [testing-strategy.md](../05-quality/testing-strategy.md): code reviewed; tes
 | Doc | Description |
 | --- | --- |
 | [00-product/PRD.md](../00-product/PRD.md) | Canonical product source of truth: vision, scope, requirements, delivery plan. |
+| [00-product/v1-scope.md](../00-product/v1-scope.md) | V1 "Game Live" scope: what the first build includes and defers. |
 | [00-product/user-stories.md](../00-product/user-stories.md) | Acceptance criteria for US-01 to US-13. |
 | [00-product/roadmap.md](../00-product/roadmap.md) | M0–M6 delivery detail, dependencies, milestone acceptance. |
 | [01-architecture/system-architecture.md](../01-architecture/system-architecture.md) | High-level system, stack, solution structure. |

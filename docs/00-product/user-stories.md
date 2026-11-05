@@ -1,6 +1,6 @@
 # User Stories & Acceptance Criteria — Multiplayer Tic-Tac-Toe
 
-*Expands the 13 user stories of the [PRD](PRD.md#31-user-stories) into full, testable acceptance criteria with priority, milestone, functional-requirement traceability and UI touchpoints.*
+*Expands the 13 user stories of the [PRD](PRD.md#31-user-stories) into full, testable acceptance criteria with priority, milestone, functional-requirement traceability and UI touchpoints. The first build implements only the **V1 "Game Live" subset** of these stories — see [v1-scope](v1-scope.md).*
 
 ---
 

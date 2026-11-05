@@ -7,7 +7,7 @@
 | **Version** | 1.1 (MVP) |
 | **Status** | Approved for development |
 | **Stack** | .NET 10 · Clean Architecture · DDD · CQRS (Cortex.Mediator) · Identity · PostgreSQL 18 · SignalR · Angular 22 (zoneless) · Tailwind CSS 4 |
-| **Delivery plan** | M0–M6, milestone-based with no calendar schedule (see [roadmap](roadmap.md)) |
+| **Delivery plan** | V1 "Game Live" first, then the remaining M0–M6 slices (see [v1-scope](v1-scope.md) and [roadmap](roadmap.md)) |
 
 ---
 
@@ -33,7 +33,7 @@ Casual web games are usually anonymous, ugly, or ad-ridden, and most Tic-Tac-Toe
 
 ### 1.4 Non-Goals (MVP)
 
-Ratings/ELO, matchmaking queues, chat, friends, spectators, game history UI, social login, email verification, rematch, AI opponent, timers/clocks. These are listed in [Future scope](#11-future-scope-post-mvp) and the [roadmap](roadmap.md).
+Ratings/ELO, matchmaking queues, chat, friends, spectators, game history UI, social login, email verification, rematch, AI opponent, timers/clocks. These are listed in [Future scope](#11-future-scope-post-mvp) and the [roadmap](roadmap.md). The first build (**V1 — "Game Live"**) additionally defers presence, live lobby updates, disconnect-grace auto-forfeit and the hardening pass: see [v1-scope](v1-scope.md).
 
 ## 2. Users
 
@@ -58,6 +58,8 @@ Ratings/ELO, matchmaking queues, chat, friends, spectators, game history UI, soc
 
 ### 3.1 User Stories
 
+> **V1 subset:** US-04 and US-10 are post-V1; US-05 and US-13 ship in simplified form. Mapping: [v1-scope](v1-scope.md).
+
 | ID | Story | Priority |
 | --- | --- | --- |
 | US-01 | As a visitor, I can register with username, email and password. | Must |
@@ -77,6 +79,8 @@ Ratings/ELO, matchmaking queues, chat, friends, spectators, game history UI, soc
 Full acceptance criteria per story: [user-stories.md](user-stories.md).
 
 ### 3.2 Functional Requirements
+
+> **V1 subset:** FR-04, FR-10 and FR-11 are post-V1 (manual forfeit via Leave covers FR-11 in V1). Mapping: [v1-scope](v1-scope.md).
 
 | ID | Requirement |
 | --- | --- |
@@ -204,6 +208,8 @@ Layer rules, folder structure and the dependency diagram: [system architecture](
 | M4 Lobby UI | Lobby page, game list, online players, create/join/cancel |
 | M5 Game UI | Board, animations, turn indicator, result modal, reconnect handling |
 | M6 Hardening | Rate limiting, integration and E2E tests, accessibility, polish, docs |
+
+**V1 — "Game Live" (the first build):** auth complete plus a rules-complete live game only — the V1 slices of M0–M5, skipping M6. Exact in/out lists and the deferred-feature mapping live in [v1-scope.md](v1-scope.md).
 
 Milestones are delivered in dependency order — there is deliberately no calendar schedule. Details, dependencies and milestone acceptance: [roadmap.md](roadmap.md). Agent build order: [AGENTS.md](../agents/AGENTS.md).
 

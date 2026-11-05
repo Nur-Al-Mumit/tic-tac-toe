@@ -6,7 +6,7 @@
 
 ## 1. Overview
 
-The MVP ships in seven milestones, **M0–M6**, delivered in dependency order with no calendar schedule (per the [PRD delivery plan](PRD.md#8-delivery-plan-m0m6)). Every user story, acceptance criterion and functional requirement traces to exactly one milestone sequence in the [user stories](user-stories.md) traceability matrix; the agent-level build order lives in [AGENTS.md](../agents/AGENTS.md).
+The MVP ships in seven milestones, **M0–M6**, delivered in dependency order with no calendar schedule (per the [PRD delivery plan](PRD.md#8-delivery-plan-m0m6)). Every user story, acceptance criterion and functional requirement traces to exactly one milestone sequence in the [user stories](user-stories.md) traceability matrix; the agent-level build order lives in [AGENTS.md](../agents/AGENTS.md). The **first build is V1 "Game Live"** — the minimal fully-functional slice (auth + live game) with the domain rules built complete; see [v1-scope](v1-scope.md).
 
 | Milestone | Focus |
 | --- | --- |
@@ -17,6 +17,18 @@ The MVP ships in seven milestones, **M0–M6**, delivered in dependency order wi
 | M4 Lobby UI | Lobby page, game list, online players, create/join/cancel |
 | M5 Game UI | Board, animations, turn indicator, result modal, reconnect |
 | M6 Hardening | Rate limiting, integration/E2E tests, accessibility, polish, docs |
+
+### V1 — "Game Live" (build this first)
+
+The first build implements only what is 100% required for two registered users to play a live game, with the domain rules and architecture **complete** so everything else is additive later. The authoritative in/out lists, FR/US mappings and no-rework seams live in [v1-scope](v1-scope.md); the milestone sections in §2 below describe the full scope.
+
+| Milestone | V1 slice | Deferred until the project resumes |
+| --- | --- | --- |
+| M0, M1, M2 | Everything (M2 minus `GetOnlinePlayersQuery`) | `GetOnlinePlayersQuery` (needs presence) |
+| M3 | Hub auth, `game-{id}` groups, `GameStarted`/`MoveMade`/`GameFinished`/`GameCancelled` | `lobby` group, `PresenceTracker`, `OpponentConnection`, `DisconnectGraceService`, stale sweep |
+| M4 | Minimal Waiting-games list + Create/Join (Full state)/Cancel + navbar with Logout | Tabs, Online Players panel, live updates, online pill, stagger/skeletons, illustrations |
+| M5 | Board, turn indicator, mark-draw + win-line, result modal, shake, basic connection badge, Leave forfeit, reload-rejoin | Grace countdown, confetti burst, advanced reconnect policy |
+| M6 | — | All of it (rate limiting, security headers, E2E, accessibility, load) |
 
 ### Dependencies
 

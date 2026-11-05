@@ -26,4 +26,4 @@ client/    Angular 22 SPA                                                       
 
 ## Status
 
-Documentation phase complete (2026-11-04). Implementation follows the [M0→M6 build order](docs/agents/AGENTS.md) — M0 Foundation is next: solution skeleton, Docker, CI, and design tokens.
+Documentation phase complete (2026-11-04). The first build is **V1 "Game Live"** — authentication plus a rules-complete live game ([v1-scope](docs/00-product/v1-scope.md)), delivered in milestone order ([AGENTS.md](docs/agents/AGENTS.md)). M0 Foundation is next: solution skeleton, Docker, CI, and design tokens.
