@@ -19,3 +19,27 @@ export interface ProblemDetails {
   errorCode?: string;
   errors?: Record<string, string>;
 }
+
+export interface PlayerRef {
+  id: string;
+  username: string;
+}
+
+export interface GameResultDto {
+  outcome: 'XWins' | 'OWins' | 'Draw';
+  reason: 'Normal' | 'Forfeit';
+  winningLine: number[] | null;
+}
+
+export interface GameDto {
+  id: string;
+  status: 'Waiting' | 'InProgress' | 'Finished' | 'Cancelled';
+  playerX: PlayerRef;
+  playerO: PlayerRef | null;
+  board: Array<'X' | 'O' | null>;
+  currentTurn: 'X' | 'O';
+  result: GameResultDto | null;
+  createdAtUtc: string;
+}
+
+export type LobbyGameDto = GameDto;
