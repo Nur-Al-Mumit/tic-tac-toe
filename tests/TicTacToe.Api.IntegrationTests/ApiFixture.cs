@@ -1,6 +1,9 @@
 using NUnit.Framework;
+using TicTacToe.Api.IntegrationTests.Fixtures;
 
-namespace TicTacToe.Api.IntegrationTests.Fixtures;
+// NOTE: deliberately in the assembly's ROOT namespace — a NUnit [SetUpFixture] only applies
+// to its own namespace and below, so a Fixtures-namesoped one never runs for Auth/Games/Realtime.
+namespace TicTacToe.Api.IntegrationTests;
 
 [SetUpFixture]
 public class ApiFixture
