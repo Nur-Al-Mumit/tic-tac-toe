@@ -14,7 +14,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 {
     private readonly PostgreSqlContainer? _container =
         Environment.GetEnvironmentVariable("TICTACTOE_TEST_DB") is null
-            ? new PostgreSqlBuilder(new DockerImage("postgres", "18-alpine"))
+            ? new PostgreSqlBuilder(new DockerImage("docker.io/postgres:18-alpine"))
                 .WithDatabase("tictactoe_test")
                 .WithUsername("postgres")
                 .WithPassword("postgres")
