@@ -7,5 +7,6 @@
     <PackageReference Include="Cortex.Mediator.Behaviors.FluentValidation" />
     <PackageReference Include="FluentValidation" />
     <PackageReference Include="Mapster" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
   </ItemGroup>
 </Project>

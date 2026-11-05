@@ -2,6 +2,7 @@ using Cortex.Mediator.Behaviors.FluentValidation.DependencyInjection;
 using Cortex.Mediator.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using TicTacToe.Application.Common.Behaviors;
+using TicTacToe.Application.Games;
 
 namespace TicTacToe.Application;
 
@@ -9,6 +10,8 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
+        services.AddScoped<GameDtoLoader>();
+
         services.AddFluentValidationValidators([typeof(DependencyInjection)]); // registers IValidator<T> from this assembly
 
         services.AddCortexMediator(

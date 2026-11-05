@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using TicTacToe.Domain.Games;
 using TicTacToe.Domain.Players;
 using TicTacToe.Infrastructure.Identity;
 
@@ -13,6 +14,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
+    public DbSet<Game> Games => Set<Game>();
+
+    public DbSet<Move> Moves => Set<Move>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -23,6 +28,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
             entity.Property(p => p.Username).HasMaxLength(20).IsRequired();
             entity.HasIndex(p => p.Username).IsUnique();
         });
+
+        builder.ApplyConfiguration(new Configurations.GameConfiguration());
+        builder.ApplyConfiguration(new Configurations.MoveConfiguration());
 
         builder.Entity<RefreshToken>(entity =>
         {

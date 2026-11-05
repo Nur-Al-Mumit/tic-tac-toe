@@ -184,6 +184,115 @@ namespace TicTacToe.Infrastructure.Persistence.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("TicTacToe.Domain.Games.Game", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<int>("CurrentTurn")
+                        .HasColumnType("integer")
+                        .HasColumnName("current_turn");
+
+                    b.Property<DateTime?>("FinishedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("finished_at_utc");
+
+                    b.Property<Guid?>("PlayerOId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_o_id");
+
+                    b.Property<Guid>("PlayerXId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_x_id");
+
+                    b.Property<DateTime?>("StartedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at_utc");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_games");
+
+                    b.HasIndex("PlayerOId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_games_player_o_active_unique")
+                        .HasFilter("status = 1");
+
+                    b.HasIndex("PlayerXId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_games_player_x_active_unique")
+                        .HasFilter("status IN (0, 1)");
+
+                    b.HasIndex("Status", "CreatedAtUtc")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_games_status_created_at_utc_desc");
+
+                    b.ToTable("games", (string)null);
+                });
+
+            modelBuilder.Entity("TicTacToe.Domain.Games.Move", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("game_id");
+
+                    b.Property<int>("Mark")
+                        .HasColumnType("integer")
+                        .HasColumnName("mark");
+
+                    b.Property<int>("MoveNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("move_number");
+
+                    b.Property<DateTime>("PlayedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("played_at_utc");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer")
+                        .HasColumnName("position");
+
+                    b.HasKey("Id")
+                        .HasName("pk_moves");
+
+                    b.HasIndex("GameId", "MoveNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ix_moves_game_id_move_number");
+
+                    b.HasIndex("GameId", "Position")
+                        .IsUnique()
+                        .HasDatabaseName("ix_moves_game_id_position");
+
+                    b.ToTable("moves", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_moves_position_range", "position BETWEEN 0 AND 8");
+                        });
+                });
+
             modelBuilder.Entity("TicTacToe.Domain.Players.PlayerProfile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -397,6 +506,53 @@ namespace TicTacToe.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_asp_net_user_tokens_asp_net_users_user_id");
+                });
+
+            modelBuilder.Entity("TicTacToe.Domain.Games.Game", b =>
+                {
+                    b.OwnsOne("TicTacToe.Domain.Games.GameResult", "Result", b1 =>
+                        {
+                            b1.Property<Guid>("GameId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<int>("Outcome")
+                                .HasColumnType("integer")
+                                .HasColumnName("result_outcome");
+
+                            b1.Property<int>("Reason")
+                                .HasColumnType("integer")
+                                .HasColumnName("result_reason");
+
+                            b1.PrimitiveCollection<int[]>("WinningLine")
+                                .HasColumnType("integer[]")
+                                .HasColumnName("result_winning_line");
+
+                            b1.HasKey("GameId");
+
+                            b1.ToTable("games");
+
+                            b1.WithOwner()
+                                .HasForeignKey("GameId")
+                                .HasConstraintName("fk_games_games_id");
+                        });
+
+                    b.Navigation("Result");
+                });
+
+            modelBuilder.Entity("TicTacToe.Domain.Games.Move", b =>
+                {
+                    b.HasOne("TicTacToe.Domain.Games.Game", null)
+                        .WithMany("Moves")
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_moves_games_game_id");
+                });
+
+            modelBuilder.Entity("TicTacToe.Domain.Games.Game", b =>
+                {
+                    b.Navigation("Moves");
                 });
 #pragma warning restore 612, 618
         }

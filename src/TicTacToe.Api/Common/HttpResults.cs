@@ -44,6 +44,7 @@ public static class HttpResults
             ? result.Value is null ? new StatusCodeResult(nullStatus) : Success(controller, result.Value, successStatus)
             : controller.Problem(result.Error!);
 
+
     private static IActionResult Success<T>(ControllerBase controller, T value, int status)
         => status switch
         {

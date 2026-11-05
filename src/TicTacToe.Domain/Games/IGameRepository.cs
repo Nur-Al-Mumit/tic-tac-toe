@@ -8,4 +8,7 @@ public interface IGameRepository
     Task<Game?> GetActiveGameForPlayerAsync(Guid playerId, CancellationToken cancellationToken = default);
 
     Task AddAsync(Game game, CancellationToken cancellationToken = default);
+
+    /// <summary>Detaches a stale tracked aggregate so a reload-once retry reads fresh database state.</summary>
+    void Detach(Game game);
 }

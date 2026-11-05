@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using TicTacToe.Application.Common.Interfaces;
+using TicTacToe.Domain.Games;
 using TicTacToe.Domain.Players;
 using TicTacToe.Infrastructure.Common;
 using TicTacToe.Infrastructure.Identity;
@@ -65,6 +66,8 @@ public static class DependencyInjection
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IPlayerProfileRepository, PlayerProfileRepository>();
+        services.AddScoped<IGameRepository, Repositories.GameRepository>();
+        services.AddScoped<IReadDbContext, ReadDbContext>();
 
         return services;
     }
