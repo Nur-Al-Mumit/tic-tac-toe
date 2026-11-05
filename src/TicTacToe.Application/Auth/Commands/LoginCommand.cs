@@ -5,7 +5,7 @@ using TicTacToe.Application.Common.Results;
 
 namespace TicTacToe.Application.Auth.Commands;
 
-public sealed record LoginCommand(string Identifier, string Password) : ICommand<AuthResponse>;
+public sealed record LoginCommand(string Identifier, string Password) : ICommand<Result<AuthResponse>>;
 
 public sealed class LoginCommandValidator : AbstractValidator<LoginCommand>
 {

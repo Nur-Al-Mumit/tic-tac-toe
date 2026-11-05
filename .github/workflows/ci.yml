@@ -30,6 +30,9 @@ jobs:
       - name: Application unit tests
         run: dotnet test tests/TicTacToe.Application.UnitTests --no-build --nologo
 
+      - name: API integration tests (Testcontainers, real PostgreSQL 18)
+        run: dotnet test tests/TicTacToe.Api.IntegrationTests --no-build --nologo
+
       - name: Audit NuGet vulnerabilities
         run: dotnet list TicTacToe.slnx package --vulnerable --include-transitive | tee /dev/stderr | (! grep -q "has the following vulnerable packages")
 

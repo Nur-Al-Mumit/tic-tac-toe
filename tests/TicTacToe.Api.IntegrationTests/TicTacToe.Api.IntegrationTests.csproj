@@ -12,7 +12,7 @@
     <PackageReference Include="NUnit3TestAdapter" />
     <PackageReference Include="Respawn" />
     <PackageReference Include="Shouldly" />
-    <PackageReference Include="Testcontainers.Postgresql" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
     <!-- transitive-vulnerability overrides (audit-clean restore) -->
     <PackageReference Include="Azure.Identity" PrivateAssets="all" />
     <PackageReference Include="System.Drawing.Common" PrivateAssets="all" />
