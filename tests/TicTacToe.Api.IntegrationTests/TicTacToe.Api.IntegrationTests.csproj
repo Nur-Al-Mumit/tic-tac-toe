@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\TicTacToe.Api\TicTacToe.Api.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="NUnit" />
+    <PackageReference Include="NUnit3TestAdapter" />
+    <PackageReference Include="Respawn" />
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="Testcontainers.Postgresql" />
+    <!-- transitive-vulnerability overrides (audit-clean restore) -->
+    <PackageReference Include="Azure.Identity" PrivateAssets="all" />
+    <PackageReference Include="System.Drawing.Common" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

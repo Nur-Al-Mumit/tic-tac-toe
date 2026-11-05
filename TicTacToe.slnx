@@ -1,0 +1,9 @@
+<Solution>
+  <Project Path="src/TicTacToe.Domain/TicTacToe.Domain.csproj" />
+  <Project Path="src/TicTacToe.Application/TicTacToe.Application.csproj" />
+  <Project Path="src/TicTacToe.Infrastructure/TicTacToe.Infrastructure.csproj" />
+  <Project Path="src/TicTacToe.Api/TicTacToe.Api.csproj" />
+  <Project Path="tests/TicTacToe.Domain.UnitTests/TicTacToe.Domain.UnitTests.csproj" />
+  <Project Path="tests/TicTacToe.Application.UnitTests/TicTacToe.Application.UnitTests.csproj" />
+  <Project Path="tests/TicTacToe.Api.IntegrationTests/TicTacToe.Api.IntegrationTests.csproj" />
+</Solution>
