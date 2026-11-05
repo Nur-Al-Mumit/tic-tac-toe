@@ -1,0 +1,34 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  backend:
+    name: backend (build + tests)
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER: 1
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore TicTacToe.slnx
+
+      - name: Build (warnings as errors)
+        run: dotnet build TicTacToe.slnx --no-restore
+
+      - name: Domain unit tests
+        run: dotnet test tests/TicTacToe.Domain.UnitTests --no-build --nologo
+
+      - name: Application unit tests
+        run: dotnet test tests/TicTacToe.Application.UnitTests --no-build --nologo
+
+      - name: Audit NuGet vulnerabilities
+        run: dotnet list TicTacToe.slnx package --vulnerable --include-transitive | tee /dev/stderr | (! grep -q "has the following vulnerable packages")
