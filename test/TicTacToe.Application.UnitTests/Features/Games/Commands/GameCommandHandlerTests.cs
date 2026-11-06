@@ -1,6 +1,8 @@
+using Microsoft.Extensions.Options;
 using NUnit.Framework;
 using NSubstitute;
 using Shouldly;
+using TicTacToe.Application.Common;
 using TicTacToe.Application.Common.Results;
 using TicTacToe.Application.Contracts;
 using TicTacToe.Application.Contracts.Repositories;
@@ -22,7 +24,8 @@ public class GameCommandHandlerTests
         IPlayerProfileRepository Profiles,
         ICurrentUser CurrentUser,
         IDateTimeProvider Time,
-        GameDtoLoader Loader);
+        GameDtoLoader Loader,
+        IOptions<GameRulesOptions> Rules);
 
     private static Ctx New()
     {
@@ -40,7 +43,10 @@ public class GameCommandHandlerTests
                 .Select(id => new PlayerProfile(id, id == Ids.Host ? "host_01" : "opp_02", Now))
                 .ToList());
 
-        return new Ctx(unitOfWork, games, profiles, currentUser, time, new GameDtoLoader(Substitute.For<Contracts.Services.IReadDbContext>(), profiles));
+        var rules = Substitute.For<IOptions<GameRulesOptions>>();
+        rules.Value.Returns(new GameRulesOptions());
+
+        return new Ctx(unitOfWork, games, profiles, currentUser, time, new GameDtoLoader(Substitute.For<Contracts.Services.IReadDbContext>(), profiles), rules);
     }
 
     private static Game StartedGame()
@@ -97,7 +103,7 @@ public class GameCommandHandlerTests
         ctx.Games.GetGameByIdAsync(game.Id, Arg.Any<CancellationToken>()).Returns(game);
         ctx.CurrentUser.UserId.Returns(Guid.NewGuid());
 
-        var result = await new GameJoinCommandHandler(ctx.UnitOfWork, ctx.CurrentUser, ctx.Time, ctx.Loader)
+        var result = await new GameJoinCommandHandler(ctx.UnitOfWork, ctx.CurrentUser, ctx.Time, ctx.Loader, ctx.Rules)
             .Handle(new GameJoinCommand(game.Id), CancellationToken.None);
 
         result.Error!.Code.ShouldBe("Games.Full");
@@ -111,7 +117,7 @@ public class GameCommandHandlerTests
         ctx.Games.GetGameByIdAsync(game.Id, Arg.Any<CancellationToken>()).Returns(game);
         ctx.CurrentUser.UserId.Returns(Ids.Host);
 
-        var result = await new GameJoinCommandHandler(ctx.UnitOfWork, ctx.CurrentUser, ctx.Time, ctx.Loader)
+        var result = await new GameJoinCommandHandler(ctx.UnitOfWork, ctx.CurrentUser, ctx.Time, ctx.Loader, ctx.Rules)
             .Handle(new GameJoinCommand(game.Id), CancellationToken.None);
 
         result.Error!.Code.ShouldBe("Games.CannotJoinOwnGame");
@@ -126,7 +132,7 @@ public class GameCommandHandlerTests
         ctx.Games.GetActiveGameForPlayerAsync(Ids.Opponent, Arg.Any<CancellationToken>()).Returns((Game?)null);
         ctx.CurrentUser.UserId.Returns(Ids.Opponent);
 
-        var result = await new GameJoinCommandHandler(ctx.UnitOfWork, ctx.CurrentUser, ctx.Time, ctx.Loader)
+        var result = await new GameJoinCommandHandler(ctx.UnitOfWork, ctx.CurrentUser, ctx.Time, ctx.Loader, ctx.Rules)
             .Handle(new GameJoinCommand(game.Id), CancellationToken.None);
 
         result.IsSuccess.ShouldBeTrue();
@@ -143,7 +149,7 @@ public class GameCommandHandlerTests
         ctx.Games.GetGameByIdAsync(game.Id, Arg.Any<CancellationToken>()).Returns(game);
         ctx.CurrentUser.UserId.Returns(Ids.Opponent); // O tries to move first
 
-        var result = await new GameMoveCommandHandler(ctx.UnitOfWork, ctx.CurrentUser, ctx.Time, ctx.Loader)
+        var result = await new GameMoveCommandHandler(ctx.UnitOfWork, ctx.CurrentUser, ctx.Time, ctx.Loader, ctx.Rules)
             .Handle(new GameMoveCommand(game.Id, 0), CancellationToken.None);
 
         result.Error!.Code.ShouldBe("Games.NotYourTurn");
@@ -157,7 +163,7 @@ public class GameCommandHandlerTests
         ctx.Games.GetGameByIdAsync(game.Id, Arg.Any<CancellationToken>()).Returns(game);
         ctx.CurrentUser.UserId.Returns(Guid.NewGuid());
 
-        var result = await new GameMoveCommandHandler(ctx.UnitOfWork, ctx.CurrentUser, ctx.Time, ctx.Loader)
+        var result = await new GameMoveCommandHandler(ctx.UnitOfWork, ctx.CurrentUser, ctx.Time, ctx.Loader, ctx.Rules)
             .Handle(new GameMoveCommand(game.Id, 0), CancellationToken.None);
 
         result.Error!.Code.ShouldBe("Games.Forbidden");
@@ -171,7 +177,7 @@ public class GameCommandHandlerTests
         ctx.Games.GetGameByIdAsync(game.Id, Arg.Any<CancellationToken>()).Returns(game);
         ctx.CurrentUser.UserId.Returns(Ids.Host);
 
-        var result = await new GameMoveCommandHandler(ctx.UnitOfWork, ctx.CurrentUser, ctx.Time, ctx.Loader)
+        var result = await new GameMoveCommandHandler(ctx.UnitOfWork, ctx.CurrentUser, ctx.Time, ctx.Loader, ctx.Rules)
             .Handle(new GameMoveCommand(game.Id, 4), CancellationToken.None);
 
         result.IsSuccess.ShouldBeTrue();
@@ -191,6 +197,40 @@ public class GameCommandHandlerTests
             .Handle(new GameCancelCommand(game.Id), CancellationToken.None);
 
         result.Error!.Code.ShouldBe("Games.NotHost");
+    }
+
+    [Test]
+    public async Task GameTimeout_ExpiredClock_EndsGameByTimeout()
+    {
+        var ctx = New();
+        var game = Game.Create(Ids.Host, Now);
+        game.Join(Ids.Opponent, Now, TimeSpan.FromSeconds(60)); // deadline: Now+60
+        ctx.Games.GetGameByIdAsync(game.Id, Arg.Any<CancellationToken>()).Returns(game);
+        ctx.Time.UtcNow.Returns(Now.AddSeconds(61)); // the clock has expired by handler time
+
+        var result = await new GameTimeoutCommandHandler(ctx.UnitOfWork, ctx.Time)
+            .Handle(new GameTimeoutCommand(game.Id, Ids.Host), CancellationToken.None);
+
+        result.IsSuccess.ShouldBeTrue();
+        game.Status.ShouldBe(GameStatus.Finished);
+        game.Result!.Reason.ShouldBe(FinishReason.Timeout);
+        game.Result.Outcome.ShouldBe(GameOutcome.OWins);
+    }
+
+    [Test]
+    public async Task GameTimeout_ClockAlreadyReset_IsNoOp()
+    {
+        var ctx = New();
+        var game = Game.Create(Ids.Host, Now);
+        game.Join(Ids.Opponent, Now, TimeSpan.FromSeconds(6000)); // plenty of time left
+        ctx.Games.GetGameByIdAsync(game.Id, Arg.Any<CancellationToken>()).Returns(game);
+
+        var result = await new GameTimeoutCommandHandler(ctx.UnitOfWork, ctx.Time)
+            .Handle(new GameTimeoutCommand(game.Id, Ids.Host), CancellationToken.None);
+
+        result.IsSuccess.ShouldBeTrue();
+        game.Status.ShouldBe(GameStatus.InProgress);
+        await ctx.UnitOfWork.DidNotReceive().SaveAsync();
     }
 
     [Test]

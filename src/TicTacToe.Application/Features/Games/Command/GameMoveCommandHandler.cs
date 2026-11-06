@@ -1,8 +1,10 @@
 using Cortex.Mediator.Commands;
 using Microsoft.EntityFrameworkCore;
 using TicTacToe.Application.Common.Results;
+using TicTacToe.Application.Common;
 using TicTacToe.Application.Contracts;
 using TicTacToe.Application.Contracts.Services;
+using Microsoft.Extensions.Options;
 using TicTacToe.Application.Features.Games.Dtos;
 using TicTacToe.Domain.Entities.GameAggregate;
 
@@ -13,7 +15,8 @@ public sealed class GameMoveCommandHandler(
     IApplicationUnitOfWork unitOfWork,
     ICurrentUser currentUser,
     IDateTimeProvider dateTimeProvider,
-    GameDtoLoader dtoLoader) : ICommandHandler<GameMoveCommand, Result<GameDto>>
+    GameDtoLoader dtoLoader,
+    IOptions<GameRulesOptions> gameRules) : ICommandHandler<GameMoveCommand, Result<GameDto>>
 {
     public async Task<Result<GameDto>> Handle(GameMoveCommand command, CancellationToken cancellationToken)
     {
@@ -38,7 +41,7 @@ public sealed class GameMoveCommandHandler(
 
             try
             {
-                game.MakeMove(playerId, command.Position, dateTimeProvider.UtcNow);
+                game.MakeMove(playerId, command.Position, dateTimeProvider.UtcNow, gameRules.Value.MoveTimeout);
                 await unitOfWork.SaveAsync();
                 break;
             }

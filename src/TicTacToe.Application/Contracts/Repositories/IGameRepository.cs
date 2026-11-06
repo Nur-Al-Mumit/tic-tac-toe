@@ -12,4 +12,7 @@ public interface IGameRepository : IRepository<Game, Guid>
 
     /// <summary>Detaches a stale tracked aggregate so a reload-once retry reads fresh database state.</summary>
     void Detach(Game game);
+
+    /// <summary>InProgress games whose move deadline has passed (the timeout sweeper's input).</summary>
+    Task<IReadOnlyList<Game>> GetTimedOutGamesAsync(DateTime utcNow, CancellationToken cancellationToken);
 }

@@ -27,7 +27,7 @@ export interface PlayerRef {
 
 export interface GameResultDto {
   outcome: 'XWins' | 'OWins' | 'Draw';
-  reason: 'Normal' | 'Forfeit';
+  reason: 'Normal' | 'Forfeit' | 'Timeout';
   winningLine: number[] | null;
 }
 
@@ -40,6 +40,7 @@ export interface GameDto {
   currentTurn: 'X' | 'O';
   result: GameResultDto | null;
   createdAtUtc: string;
+  moveDeadlineUtc: string | null;
 }
 
 export type LobbyGameDto = GameDto;

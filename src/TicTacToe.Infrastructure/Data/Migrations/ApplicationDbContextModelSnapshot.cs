@@ -11,7 +11,7 @@ using TicTacToe.Infrastructure.Data;
 namespace TicTacToe.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
@@ -184,7 +184,7 @@ namespace TicTacToe.Infrastructure.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("TicTacToe.Domain.Games.Game", b =>
+            modelBuilder.Entity("TicTacToe.Domain.Entities.GameAggregate.Game", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -202,6 +202,10 @@ namespace TicTacToe.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("FinishedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("finished_at_utc");
+
+                    b.Property<DateTime?>("MoveDeadlineUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("move_deadline_utc");
 
                     b.Property<Guid?>("PlayerOId")
                         .HasColumnType("uuid")
@@ -228,6 +232,10 @@ namespace TicTacToe.Infrastructure.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_games");
 
+                    b.HasIndex("MoveDeadlineUtc")
+                        .HasDatabaseName("ix_games_move_deadline_active")
+                        .HasFilter("status = 1");
+
                     b.HasIndex("PlayerOId")
                         .IsUnique()
                         .HasDatabaseName("ix_games_player_o_active_unique")
@@ -245,7 +253,7 @@ namespace TicTacToe.Infrastructure.Data.Migrations
                     b.ToTable("games", (string)null);
                 });
 
-            modelBuilder.Entity("TicTacToe.Domain.Games.Move", b =>
+            modelBuilder.Entity("TicTacToe.Domain.Entities.GameAggregate.Move", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -293,7 +301,7 @@ namespace TicTacToe.Infrastructure.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("TicTacToe.Domain.Players.PlayerProfile", b =>
+            modelBuilder.Entity("TicTacToe.Domain.Entities.PlayerProfile", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -508,9 +516,9 @@ namespace TicTacToe.Infrastructure.Data.Migrations
                         .HasConstraintName("fk_asp_net_user_tokens_asp_net_users_user_id");
                 });
 
-            modelBuilder.Entity("TicTacToe.Domain.Games.Game", b =>
+            modelBuilder.Entity("TicTacToe.Domain.Entities.GameAggregate.Game", b =>
                 {
-                    b.OwnsOne("TicTacToe.Domain.Games.GameResult", "Result", b1 =>
+                    b.OwnsOne("TicTacToe.Domain.Entities.GameAggregate.GameResult", "Result", b1 =>
                         {
                             b1.Property<Guid>("GameId")
                                 .HasColumnType("uuid")
@@ -540,9 +548,9 @@ namespace TicTacToe.Infrastructure.Data.Migrations
                     b.Navigation("Result");
                 });
 
-            modelBuilder.Entity("TicTacToe.Domain.Games.Move", b =>
+            modelBuilder.Entity("TicTacToe.Domain.Entities.GameAggregate.Move", b =>
                 {
-                    b.HasOne("TicTacToe.Domain.Games.Game", null)
+                    b.HasOne("TicTacToe.Domain.Entities.GameAggregate.Game", null)
                         .WithMany("Moves")
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -550,7 +558,7 @@ namespace TicTacToe.Infrastructure.Data.Migrations
                         .HasConstraintName("fk_moves_games_game_id");
                 });
 
-            modelBuilder.Entity("TicTacToe.Domain.Games.Game", b =>
+            modelBuilder.Entity("TicTacToe.Domain.Entities.GameAggregate.Game", b =>
                 {
                     b.Navigation("Moves");
                 });

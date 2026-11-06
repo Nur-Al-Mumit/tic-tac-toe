@@ -62,6 +62,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(m => m.GameId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            entity.Property(g => g.MoveDeadlineUtc);
+            // Timeout sweeper lookup: InProgress games with an expired move clock.
+            entity.HasIndex(g => g.MoveDeadlineUtc)
+                .HasDatabaseName("ix_games_move_deadline_active")
+                .HasFilter("status = 1");
+
             // xmin as the optimistic concurrency token (ADR-0006). Npgsql maps a uint rowversion
             // property to the real PostgreSQL xmin system column and reads it back after each save.
             entity.Property(g => g.Version).IsRowVersion();

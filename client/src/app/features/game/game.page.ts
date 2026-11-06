@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, input, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { NavbarComponent } from '../../shared/navbar.component';
 import { AuthService } from '../../core/auth.service';
@@ -64,16 +64,48 @@ import { GameBoardComponent } from './game-board.component';
 
         <!-- waiting state -->
         @if (game.status === 'Waiting') {
-          <div class="glass-card flex w-full flex-col items-center gap-4 px-6 py-12">
-            <div class="grid grid-cols-3 gap-1.5" aria-hidden="true">
-              <span class="h-7 w-7 rounded-lg border border-surface-border bg-bg/60 animate-glow-breathe"></span>
-              <span class="h-7 w-7 rounded-lg border border-surface-border bg-bg/60"></span>
-              <span class="h-7 w-7 rounded-lg border border-surface-border bg-bg/60"></span>
+          <section class="glass-card animate-rise flex w-full flex-col items-center gap-5 px-6 py-10" aria-live="polite">
+            <!-- mini-board scan: opponent joining -->
+            <div class="grid w-fit grid-cols-3 gap-1.5" aria-hidden="true">
+              @for (delay of scanDelays; track $index) {
+                @if ($index === 4) {
+                  <span class="flex h-11 w-11 animate-glow-breathe items-center justify-center rounded-lg border border-primary/40 bg-primary/5 font-mono text-lg font-black text-primary/70">?</span>
+                } @else {
+                  <span class="h-11 w-11 animate-cell-scan rounded-lg border border-surface-border bg-bg/60"
+                        [style.animation-delay.ms]="delay"></span>
+                }
+              }
             </div>
-            <p class="text-lg font-bold text-slate-200">Waiting for an opponent<span class="animate-pulse">…</span></p>
-            <p class="text-xs text-slate-500">Your game is live in the lobby — anyone can join.</p>
+
+            <div class="text-center">
+              <h2 class="text-lg font-bold text-slate-200">Waiting for an opponent<span class="animate-pulse">…</span></h2>
+              <p class="mt-1 text-xs text-slate-500">Your game is live in the lobby — anyone can join.</p>
+            </div>
+
+            <!-- status details -->
+            <dl class="w-full rounded-xl border border-surface-border/70 bg-bg/40 px-4 py-3 font-mono text-xs">
+              <div class="flex items-center justify-between gap-3">
+                <dt class="uppercase tracking-wider text-slate-500">Status</dt>
+                <dd class="flex items-center gap-1.5 font-semibold"
+                    [class.text-success]="connection() === 'connected'"
+                    [class.text-amber-400]="connection() === 'reconnecting'"
+                    [class.text-slate-500]="connection() === 'disconnected'">
+                  <span class="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-current" aria-hidden="true"></span>
+                  {{ connection() === 'connected' ? 'Searching' : connection() === 'reconnecting' ? 'Reconnecting' : 'Offline' }}
+                </dd>
+              </div>
+              <div class="mt-2 flex items-center justify-between gap-3 border-t border-surface-border/60 pt-2">
+                <dt class="uppercase tracking-wider text-slate-500">You play as</dt>
+                <dd class="font-black {{ myMark() === 'X' ? 'text-mark-x' : 'text-mark-o' }}">{{ myMark() ?? 'X' }}</dd>
+              </div>
+              <div class="mt-2 flex items-center justify-between gap-3 border-t border-surface-border/60 pt-2">
+                <dt class="uppercase tracking-wider text-slate-500">Game</dt>
+                <dd class="max-w-40 truncate text-slate-400" [title]="game.id">#{{ shortId(game.id) }}</dd>
+              </div>
+            </dl>
+
             <button (click)="cancel()" class="btn-ghost danger mt-1">Cancel game</button>
-          </div>
+          </section>
         } @else {
           <ttt-game-board [game]="game" [myMark]="myMark()" [shake]="shake()" (placed)="place($event)" />
 
@@ -86,6 +118,12 @@ import { GameBoardComponent } from './game-board.component';
                 } @else {
                   <span class="mr-1.5 inline-block h-2 w-2 rounded-full bg-slate-600 align-middle"></span>
                   Opponent's turn…
+                }
+                @if (secondsLeft() !== null) {
+                  <span class="ml-2 font-mono text-base font-bold tabular-nums align-middle {{ secondsLeft()! <= 10 ? 'text-danger animate-pulse' : 'text-slate-300' }}"
+                        aria-label="Time left on the clock">
+                    ⏱ {{ clockLabel() }}
+                  </span>
                 }
               </p>
               <button (click)="leave()" class="btn-ghost danger">Leave (forfeit)</button>
@@ -112,7 +150,7 @@ import { GameBoardComponent } from './game-board.component';
     </main>
   `,
 })
-export class GamePage implements OnInit {
+export class GamePage implements OnInit, OnDestroy {
   readonly id = input.required<string>();
 
   private readonly api = inject(GamesApi);
@@ -124,6 +162,13 @@ export class GamePage implements OnInit {
   readonly error = signal<string | null>(null);
   readonly shake = signal(false);
   readonly connection = this.hub.state;
+
+  /** Ticks every second so the move clock counts down (JetBrains Mono per the design system). */
+  readonly now = signal(Date.now());
+  private clock: ReturnType<typeof setInterval> | null = null;
+
+  /** Diagonal sweep delays (row + column) × 280ms for the waiting mini-board scan. */
+  readonly scanDelays = [0, 280, 560, 280, 560, 840, 560, 840, 1120];
 
   readonly myMark = computed<'X' | 'O' | null>(() => {
     const game = this.game();
@@ -150,7 +195,23 @@ export class GamePage implements OnInit {
       onGameCancelled: () => void this.router.navigateByUrl('/lobby'),
     });
     await this.hub.joinGameRoom(gameId);
+    this.clock = setInterval(() => this.now.set(Date.now()), 1000);
   }
+
+  ngOnDestroy(): void {
+    if (this.clock) {
+      clearInterval(this.clock);
+    }
+    void this.hub.disconnect();
+  }
+
+  readonly secondsLeft = computed(() => {
+    const deadline = this.game()?.moveDeadlineUtc;
+    if (!deadline || this.game()?.status !== 'InProgress') {
+      return null;
+    }
+    return Math.max(0, Math.ceil((new Date(deadline).getTime() - this.now()) / 1000));
+  });
 
   async place(position: number): Promise<void> {
     const game = this.game();
@@ -197,8 +258,20 @@ export class GamePage implements OnInit {
     void this.router.navigateByUrl('/lobby');
   }
 
+  clockLabel(): string {
+    const s = this.secondsLeft();
+    if (s === null) {
+      return '';
+    }
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  }
+
   isMe(playerId: string): boolean {
     return this.auth.user()?.id === playerId;
+  }
+
+  shortId(id: string): string {
+    return id.length > 8 ? id.slice(0, 8) : id;
   }
 
   headline(game: GameDto): string {
@@ -211,6 +284,10 @@ export class GamePage implements OnInit {
   }
 
   subline(game: GameDto): string {
+    if (game.result?.reason === 'Timeout') {
+      const iWon = this.headline(game) === 'Victory!';
+      return iWon ? 'Your opponent ran out of time.' : 'You ran out of time.';
+    }
     return game.result?.reason === 'Forfeit' ? 'Your opponent left the game.' : 'Back to the lobby for a rematch.';
   }
 

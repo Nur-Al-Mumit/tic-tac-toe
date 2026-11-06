@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using TicTacToe.Application.Common;
+using TicTacToe.Infrastructure.Hosting;
 using TicTacToe.Application.Contracts;
 using TicTacToe.Application.Contracts.Repositories;
 using TicTacToe.Application.Contracts.Services;
@@ -18,6 +20,8 @@ public static class DependencyInjections
         services.AddIdentityConfiguration(configuration);
 
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
+        services.AddOptions<GameRulesOptions>().BindConfiguration("GameRules");
+        services.AddHostedService<GameTimeoutService>();
 
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<ITokenService, TokenService>();

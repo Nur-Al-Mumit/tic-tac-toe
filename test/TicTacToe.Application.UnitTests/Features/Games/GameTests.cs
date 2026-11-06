@@ -240,6 +240,65 @@ public class GameTests
         game.Result.ShouldNotBeNull();
     }
 
+    // ---- Move clock / Timeout ----------------------------------------------------
+
+    [Test]
+    public void Join_WithMoveTimeout_SetsFirstDeadline()
+    {
+        var game = Game.Create(Host, Now);
+
+        game.Join(Opponent, Now, TimeSpan.FromSeconds(60));
+
+        game.MoveDeadlineUtc.ShouldBe(Now.AddSeconds(60));
+        game.PlayerIdOfTurn.ShouldBe(Host);
+    }
+
+    [Test]
+    public void MakeMove_ResetsDeadlineForNextPlayer_AndClearsItOnFinish()
+    {
+        var game = Game.Create(Host, Now);
+        game.Join(Opponent, Now, TimeSpan.FromSeconds(60));
+        game.MakeMove(Host, 0, Now.AddSeconds(10), TimeSpan.FromSeconds(60));
+
+        game.MoveDeadlineUtc.ShouldBe(Now.AddSeconds(70)); // reset for O
+
+        game.Forfeit(Opponent, Now.AddSeconds(30));
+        game.MoveDeadlineUtc.ShouldBeNull(); // finished games have no clock
+    }
+
+    [Test]
+    public void Timeout_ExpiredClock_LoserByTimeout()
+    {
+        var game = Game.Create(Host, Now);
+        game.Join(Opponent, Now, TimeSpan.FromSeconds(60));
+
+        game.Timeout(Host, Now.AddSeconds(61)); // X (host) ran out of time
+
+        game.Status.ShouldBe(GameStatus.Finished);
+        game.Result!.Outcome.ShouldBe(GameOutcome.OWins);
+        game.Result.Reason.ShouldBe(FinishReason.Timeout);
+        game.Result.WinningLine.ShouldBeNull();
+        game.MoveDeadlineUtc.ShouldBeNull();
+    }
+
+    [Test]
+    public void Timeout_BeforeDeadline_Throws()
+    {
+        var game = Game.Create(Host, Now);
+        game.Join(Opponent, Now, TimeSpan.FromSeconds(60));
+
+        Should.Throw<GameNotInProgressException>(() => game.Timeout(Host, Now.AddSeconds(59)));
+        game.Status.ShouldBe(GameStatus.InProgress);
+    }
+
+    [Test]
+    public void Timeout_NotInProgress_Throws()
+    {
+        var game = FinishedByXWin();
+
+        Should.Throw<GameNotInProgressException>(() => game.Timeout(game.PlayerXId, Now.AddSeconds(99)));
+    }
+
     // ---- Forfeit / Cancel ------------------------------------------------------
 
     [Test]

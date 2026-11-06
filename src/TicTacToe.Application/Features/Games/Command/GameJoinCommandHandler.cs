@@ -1,8 +1,10 @@
 using Cortex.Mediator.Commands;
 using Microsoft.EntityFrameworkCore;
 using TicTacToe.Application.Common.Results;
+using TicTacToe.Application.Common;
 using TicTacToe.Application.Contracts;
 using TicTacToe.Application.Contracts.Services;
+using Microsoft.Extensions.Options;
 using TicTacToe.Application.Features.Games.Dtos;
 using TicTacToe.Domain.Entities.GameAggregate;
 
@@ -16,7 +18,8 @@ public sealed class GameJoinCommandHandler(
     IApplicationUnitOfWork unitOfWork,
     ICurrentUser currentUser,
     IDateTimeProvider dateTimeProvider,
-    GameDtoLoader dtoLoader) : ICommandHandler<GameJoinCommand, Result<GameDto>>
+    GameDtoLoader dtoLoader,
+    IOptions<GameRulesOptions> gameRules) : ICommandHandler<GameJoinCommand, Result<GameDto>>
 {
     public async Task<Result<GameDto>> Handle(GameJoinCommand command, CancellationToken cancellationToken)
     {
@@ -52,7 +55,7 @@ public sealed class GameJoinCommandHandler(
 
             try
             {
-                game.Join(joinerId, dateTimeProvider.UtcNow);
+                game.Join(joinerId, dateTimeProvider.UtcNow, gameRules.Value.MoveTimeout);
                 await unitOfWork.SaveAsync();
                 break;
             }

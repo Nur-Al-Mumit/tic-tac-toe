@@ -25,4 +25,5 @@ public enum FinishReason
 {
     Normal = 0,
     Forfeit = 1,
+    Timeout = 2,
 }

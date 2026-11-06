@@ -49,6 +49,14 @@ public class Game : IAggregateRoot<Guid>, IHasDomainEvents
     /// <summary>PostgreSQL xmin, used as the optimistic concurrency token (ADR-0006).</summary>
     public uint Version { get; private set; }
 
+    /// <summary>When the player on turn must move (GameRules:MoveTimeoutSeconds); null while not InProgress.</summary>
+    public DateTime? MoveDeadlineUtc { get; private set; }
+
+    /// <summary>The player who must move now (null while not InProgress).</summary>
+    public Guid? PlayerIdOfTurn => Status != GameStatus.InProgress
+        ? null
+        : CurrentTurn == Mark.X ? PlayerXId : PlayerOId;
+
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents;
 
     public void ClearDomainEvents() => _domainEvents.Clear();
@@ -67,7 +75,7 @@ public class Game : IAggregateRoot<Guid>, IHasDomainEvents
     }
 
     /// <summary>Joiner becomes Player O; the game starts. Race safety comes from xmin at save time (FR-06).</summary>
-    public void Join(Guid playerId, DateTime utcNow)
+    public void Join(Guid playerId, DateTime utcNow, TimeSpan? moveTimeout = null)
     {
         if (Status == GameStatus.Finished || Status == GameStatus.Cancelled)
         {
@@ -87,11 +95,12 @@ public class Game : IAggregateRoot<Guid>, IHasDomainEvents
         PlayerOId = playerId;
         Status = GameStatus.InProgress;
         StartedAtUtc = utcNow;
+        MoveDeadlineUtc = moveTimeout is { } timeout ? utcNow.Add(timeout) : null;
         _domainEvents.Add(new GameStarted(Id, PlayerXId, playerId, utcNow));
     }
 
     /// <summary>Server-authoritative move: turn, bounds, occupancy and status are enforced here (FR-08, FR-09).</summary>
-    public void MakeMove(Guid playerId, int position, DateTime utcNow)
+    public void MakeMove(Guid playerId, int position, DateTime utcNow, TimeSpan? moveTimeout = null)
     {
         if (Status != GameStatus.InProgress)
         {
@@ -129,10 +138,29 @@ public class Game : IAggregateRoot<Guid>, IHasDomainEvents
         else
         {
             CurrentTurn = mark == Mark.X ? Mark.O : Mark.X;
+            MoveDeadlineUtc = moveTimeout is { } timeout ? utcNow.Add(timeout) : null;
         }
     }
 
-    /// <summary>The leaver loses; the opponent wins with reason Forfeit (US-10's manual V1 form).</summary>
+    /// <summary>The player on turn ran out of time: they lose with reason Timeout. Covers disconnects too —
+    /// a gone player cannot move, so the clock expires for them.</summary>
+    public void Timeout(Guid playerId, DateTime utcNow)
+    {
+        if (Status != GameStatus.InProgress)
+        {
+            throw new GameNotInProgressException();
+        }
+
+        if (MoveDeadlineUtc is not { } deadline || deadline > utcNow)
+        {
+            throw new GameNotInProgressException(); // already reset by a newer move — nothing to time out
+        }
+
+        var loser = MarkOf(playerId);
+        Finish(loser == Mark.X ? GameOutcome.OWins : GameOutcome.XWins, FinishReason.Timeout, null, utcNow);
+    }
+
+    /// <summary>The leaver loses; the opponent wins with reason Forfeit (manual form).</summary>
     public void Forfeit(Guid playerId, DateTime utcNow)
     {
         if (Status != GameStatus.InProgress)
@@ -158,6 +186,7 @@ public class Game : IAggregateRoot<Guid>, IHasDomainEvents
         }
 
         Status = GameStatus.Cancelled;
+        MoveDeadlineUtc = null;
         FinishedAtUtc = utcNow;
         _domainEvents.Add(new GameCancelled(Id, PlayerXId, utcNow));
     }
@@ -169,6 +198,7 @@ public class Game : IAggregateRoot<Guid>, IHasDomainEvents
     private void Finish(GameOutcome outcome, FinishReason reason, int[]? winningLine, DateTime utcNow)
     {
         Status = GameStatus.Finished;
+        MoveDeadlineUtc = null;
         Result = new GameResult(outcome, reason, winningLine);
         FinishedAtUtc = utcNow;
 

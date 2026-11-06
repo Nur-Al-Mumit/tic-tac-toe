@@ -15,7 +15,8 @@ public sealed record GameDto(
     string?[] Board,
     string CurrentTurn,
     GameResultDto? Result,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    DateTime? MoveDeadlineUtc = null);
 
 public sealed record LobbyGameDto(
     Guid Id,
@@ -45,6 +46,7 @@ public static class GameMappings
             game.Result is { } result
                 ? new GameResultDto(result.Outcome.ToString(), result.Reason.ToString(), result.WinningLine)
                 : null,
-            game.CreatedAtUtc);
+            game.CreatedAtUtc,
+            game.MoveDeadlineUtc);
     }
 }

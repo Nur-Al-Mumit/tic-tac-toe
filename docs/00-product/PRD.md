@@ -33,7 +33,7 @@ Casual web games are usually anonymous, ugly, or ad-ridden, and most Tic-Tac-Toe
 
 ### 1.4 Non-Goals (MVP)
 
-Ratings/ELO, matchmaking queues, chat, friends, spectators, game history UI, social login, email verification, rematch, AI opponent, timers/clocks. These are listed in [Future scope](#11-future-scope-post-mvp) and the [roadmap](roadmap.md). The first build (**V1 — "Game Live"**) additionally defers presence, live lobby updates, disconnect-grace auto-forfeit and the hardening pass: see [v1-scope](v1-scope.md).
+Ratings/ELO, matchmaking queues, chat, friends, spectators, game history UI, social login, email verification, rematch, AI opponent. (The per-move clock shipped in V1.1: 60 s per move, loss by timeout — see [v1-scope](v1-scope.md).) These are listed in [Future scope](#11-future-scope-post-mvp) and the [roadmap](roadmap.md). The first build (**V1 — "Game Live"**) additionally defers presence, live lobby updates, disconnect-grace auto-forfeit and the hardening pass: see [v1-scope](v1-scope.md).
 
 ## 2. Users
 
