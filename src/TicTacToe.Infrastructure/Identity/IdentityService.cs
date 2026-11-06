@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using TicTacToe.Application.Features.Auth.Dtos;
 using TicTacToe.Application.Contracts.Repositories;
 using TicTacToe.Application.Contracts.Services;
@@ -40,9 +41,19 @@ public class IdentityService(
             return Result.Failure<UserDto>(new Error("Auth.RegistrationFailed", "Account could not be created with the provided values."));
         }
 
-        await profileRepository.AddAsync(new PlayerProfile(user.Id, username, dateTimeProvider.UtcNow), cancellationToken);
-        await context.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+        try
+        {
+            await profileRepository.AddAsync(new PlayerProfile(user.Id, username, dateTimeProvider.UtcNow), cancellationToken);
+            await context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: "23505" })
+        {
+            // Last line of defense (concurrency §7): the pre-check raced or a stale profile row
+            // owns the name — surface as a 409, never a 500.
+            await transaction.RollbackAsync(cancellationToken);
+            return Result.Failure<UserDto>(new Error("Auth.DuplicateUsername", $"'{username}' is not available. Try another."));
+        }
 
         return new UserDto(user.Id, user.UserName!, user.Email!);
     }
