@@ -1,6 +1,7 @@
 using Scalar.AspNetCore;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using TicTacToe.Api.Extensions;
 using TicTacToe.Api.Middleware;
 using TicTacToe.Api.Hubs;
 using TicTacToe.Api.Realtime;
@@ -33,6 +34,7 @@ try
     builder.Services.AddScoped<IGameNotifier, SignalRGameNotifier>();
     builder.Services.AddSignalR();
     builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+    builder.Services.AddApiRateLimiting();
     builder.Services.AddCors(options => options.AddPolicy("Client", policy => policy
         .WithOrigins((builder.Configuration["Cors:Origins"] ?? "http://localhost:4200").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         .AllowAnyHeader()
@@ -43,7 +45,9 @@ try
     var app = builder.Build();
 
     app.UseMiddleware<CorrelationIdMiddleware>();
+    app.UseMiddleware<SecurityHeadersMiddleware>();
     app.UseCors("Client");
+    app.UseRateLimiter();
     app.UseAuthentication();
     app.UseAuthorization();
     app.UseMiddleware<ExceptionHandlingMiddleware>();

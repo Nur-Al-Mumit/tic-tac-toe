@@ -1,5 +1,7 @@
 using Cortex.Mediator;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
+using TicTacToe.Api.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using TicTacToe.Api.Common;
 using TicTacToe.Application.Contracts.Services;
@@ -50,6 +52,7 @@ public sealed class GamesController(IMediator mediator, ICurrentUser currentUser
 
     /// <summary>Place a mark (200). 409 not your turn / 422 invalid position or occupied cell.</summary>
     [HttpPost("{id:guid}/moves")]
+    [EnableRateLimiting(RateLimitingExtensions.MovesPolicy)]
     [ProducesResponseType<GameDto>(StatusCodes.Status200OK)]
     public async Task<IActionResult> Move(Guid id, MoveGameRequest request, CancellationToken cancellationToken)
         => this.FromResult(await mediator.SendAsync(new GameMoveCommand(id, request.Position), cancellationToken));

@@ -1,5 +1,7 @@
 using Cortex.Mediator;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
+using TicTacToe.Api.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using TicTacToe.Api.Common;
 using TicTacToe.Application.Features.Auth.Command;
@@ -10,6 +12,7 @@ namespace TicTacToe.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/auth")]
+[EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
 public sealed class AuthController(IMediator mediator, ICurrentUser currentUser) : ControllerBase
 {
     /// <summary>Register with username, email and password; returns tokens (201).</summary>
