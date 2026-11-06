@@ -234,6 +234,7 @@ Per [testing-strategy.md](../05-quality/testing-strategy.md): code reviewed; tes
 | --- | --- |
 | [00-product/PRD.md](../00-product/PRD.md) | Canonical product source of truth: vision, scope, requirements, delivery plan. |
 | [00-product/v1-scope.md](../00-product/v1-scope.md) | V1 "Game Live" scope: what the first build includes and defers. |
+| [00-product/v2-scope.md](../00-product/v2-scope.md) | V2 phases V2.0–V2.4: all remaining features after V1.1. |
 | [00-product/user-stories.md](../00-product/user-stories.md) | Acceptance criteria for US-01 to US-13. |
 | [00-product/roadmap.md](../00-product/roadmap.md) | M0–M6 delivery detail, dependencies, milestone acceptance. |
 | [01-architecture/system-architecture.md](../01-architecture/system-architecture.md) | High-level system, stack, solution structure. |

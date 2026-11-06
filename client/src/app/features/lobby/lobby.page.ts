@@ -90,7 +90,10 @@ type LobbyTab = 'open' | 'inprogress';
                         <span class="font-mono text-mark-o">O</span>
                         {{ opponent.username }}
                       } @else {
-                        <span class="ml-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 align-middle text-[10px] font-bold uppercase tracking-wider text-amber-400">waiting</span>
+                        <span [class]="waitingBadge(game)">
+                          <span class="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-current"></span>
+                          waiting<span class="font-mono normal-case tracking-normal"> {{ countdown(waitLeft(game)) }}</span>
+                        </span>
                       }
                     </p>
                     <p class="mt-0.5 font-mono text-xs text-slate-500">created {{ shortTime(game.createdAtUtc) }}</p>
@@ -163,6 +166,13 @@ export class LobbyPage implements OnInit, OnDestroy {
   readonly runningGames = computed(() => this.games().filter((g) => g.status === 'InProgress'));
   readonly shownGames = computed(() => (this.tab() === 'open' ? this.openGames() : this.runningGames()));
 
+  /** Ticked every second so the waiting timeout countdowns render live. */
+  readonly now = signal(Date.now());
+  private clock: ReturnType<typeof setInterval> | null = null;
+
+  /** Mirrors the backend "GameRules:WaitingTimeoutSeconds" — waiting games auto-cancel at 0. */
+  private static readonly WAITING_TIMEOUT_SECONDS = 120;
+
   ngOnInit(): void {
     void this.load();
     void this.api.online().then((p) => this.players.set(p)).catch(() => this.players.set([]));
@@ -175,9 +185,19 @@ export class LobbyPage implements OnInit, OnDestroy {
       onGameRemoved: ({ gameId }) => this.games.update((games) => games.filter((g) => g.id !== gameId)),
       onPresenceChanged: ({ players }) => this.players.set(players),
     });
+
+    // Only tick while a row still counts its waiting clock down (waiting games expire after 2 min).
+    this.clock = setInterval(() => {
+      if (this.games().some((g) => g.status === 'Waiting')) {
+        this.now.set(Date.now());
+      }
+    }, 1000);
   }
 
   ngOnDestroy(): void {
+    if (this.clock) {
+      clearInterval(this.clock);
+    }
     void this.hub.disconnect();
   }
 
@@ -264,6 +284,26 @@ export class LobbyPage implements OnInit, OnDestroy {
 
   isMine(game: GameDto): boolean {
     return this.auth.user()?.id === game.playerX.id || this.auth.user()?.id === game.playerO?.id;
+  }
+
+  /** Seconds left before the backend auto-cancels this waiting game. */
+  waitLeft(game: GameDto): number {
+    const expiry = new Date(game.createdAtUtc).getTime() + LobbyPage.WAITING_TIMEOUT_SECONDS * 1000;
+    return Math.max(0, Math.ceil((expiry - this.now()) / 1000));
+  }
+
+  /** m:ss formatting for the waiting badge countdown. */
+  countdown(seconds: number): string {
+    return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  }
+
+  /** Badge style escalates as the waiting clock runs out: amber → pulsing red under 30s. */
+  waitingBadge(game: GameDto): string {
+    const left = this.waitLeft(game);
+    const base = 'ml-2 inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 align-middle text-[10px] font-bold uppercase tracking-wider';
+    const urgent = left <= 30;
+    const colors = urgent ? 'border-danger/40 bg-danger/10 text-red-400' : 'border-amber-400/30 bg-amber-400/10 text-amber-400';
+    return `${base} ${colors}${urgent ? ' animate-pulse' : ''}`;
   }
 
   shortTime(isoUtc: string): string {

@@ -2,7 +2,7 @@
 
 *Defines the first buildable version: authentication and a fully live, rules-complete game — and nothing else. Everything not listed as **in** is deferred, not deleted: the deep-dive specs remain the target design, and deferred features plug into the seams listed in §6 with no rework.*
 
-Parent document: [PRD](PRD.md) · Related: [Roadmap](roadmap.md) · Build order: [AGENTS.md](../agents/AGENTS.md)
+Parent document: [PRD](PRD.md) · Related: [Roadmap](roadmap.md) · Next: [v2-scope](v2-scope.md) — everything after V1.1 · Build order: [AGENTS.md](../agents/AGENTS.md)
 
 ---
 
