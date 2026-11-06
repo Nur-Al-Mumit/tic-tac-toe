@@ -31,8 +31,21 @@ client/    Angular 22 SPA                                                       
 Verified locally: solution builds with 0 warnings (warnings-as-errors), 61 NUnit + Shouldly unit tests (domain rules + handlers) and 17 vitest specs green; the full flow (register → create → join → play to a win) verified on the running stack. CI runs the same suites — no Docker required for tests.
 
 ```bash
-# run everything locally
+# backend (uses your local PostgreSQL via user-secrets — see below)
 dotnet build TicTacToe.slnx && dotnet test test/TicTacToe.Application.UnitTests
-cd client && npm ci && npm test -- --watch=false && npm run build
-docker compose up --build   # postgres 18 + api (:8081) + client (:8080)
+dotnet run --project src/TicTacToe.Api          # :8080, migrations apply on startup (Development)
+
+# frontend
+cd client && npm ci && npm start                # :4200, proxies /api + /hubs to :8080
+
+# or the whole stack in Docker
+docker compose up --build                       # postgres 18 + api (:8081) + client (:8080)
+```
+
+**Local database (one-time):** the connection string lives in user-secrets, never in committed files —
+create the database once (`CREATE DATABASE tictactoe;`) and register your machine's credentials:
+
+```bash
+dotnet user-secrets init --project src/TicTacToe.Api
+dotnet user-secrets set --project src/TicTacToe.Api "ConnectionStrings:Default" "Host=127.0.0.1;Port=5432;Database=tictactoe;Username=postgres;Password=<your-password>"
 ```
