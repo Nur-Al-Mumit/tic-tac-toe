@@ -8,12 +8,13 @@ import { SignalRService } from '../../core/signalr.service';
 import { problemMessage } from '../../core/problem';
 import { GameDto } from '../../core/models';
 import { GameBoardComponent } from './game-board.component';
+import { DemoBoardComponent } from '../../shared/demo-board.component';
 
 /** V1 game page: live board via SignalR, explicit Leave forfeit, reload = full resync. */
 @Component({
   selector: 'ttt-game-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NavbarComponent, GameBoardComponent],
+  imports: [NavbarComponent, GameBoardComponent, DemoBoardComponent],
   template: `
     <ttt-navbar />
     <main class="mx-auto flex max-w-lg flex-col items-center px-4 py-8">
@@ -65,17 +66,8 @@ import { GameBoardComponent } from './game-board.component';
         <!-- waiting state -->
         @if (game.status === 'Waiting') {
           <section class="glass-card animate-rise flex w-full flex-col items-center gap-5 px-6 py-10" aria-live="polite">
-            <!-- mini-board scan: opponent joining -->
-            <div class="grid w-fit grid-cols-3 gap-1.5" aria-hidden="true">
-              @for (delay of scanDelays; track $index) {
-                @if ($index === 4) {
-                  <span class="flex h-11 w-11 animate-glow-breathe items-center justify-center rounded-lg border border-primary/40 bg-primary/5 font-mono text-lg font-black text-primary/70">?</span>
-                } @else {
-                  <span class="h-11 w-11 animate-cell-scan rounded-lg border border-surface-border bg-bg/60"
-                        [style.animation-delay.ms]="delay"></span>
-                }
-              }
-            </div>
+            <!-- demo match: plays a random game while you wait -->
+            <ttt-demo-board size="lg" />
 
             <div class="text-center">
               <h2 class="text-lg font-bold text-slate-200">Waiting for an opponent<span class="animate-pulse">…</span></h2>
@@ -166,9 +158,6 @@ export class GamePage implements OnInit, OnDestroy {
   /** Ticks every second so the move clock counts down (JetBrains Mono per the design system). */
   readonly now = signal(Date.now());
   private clock: ReturnType<typeof setInterval> | null = null;
-
-  /** Diagonal sweep delays (row + column) × 280ms for the waiting mini-board scan. */
-  readonly scanDelays = [0, 280, 560, 280, 560, 840, 560, 840, 1120];
 
   readonly myMark = computed<'X' | 'O' | null>(() => {
     const game = this.game();

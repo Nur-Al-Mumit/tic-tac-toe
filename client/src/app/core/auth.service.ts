@@ -18,12 +18,12 @@ export class AuthService {
   readonly user = this.session.asReadonly();
   readonly isAuthenticated = computed(() => this.session() !== null);
 
-  async login(identifier: string, password: string): Promise<void> {
-    this.store(await firstValueFrom(this.http.post<AuthResponse>('/api/v1/auth/login', { identifier, password }, AuthEndpoint)));
+  async login(identifier: string, password: string, remember = true): Promise<void> {
+    this.store(await firstValueFrom(this.http.post<AuthResponse>('/api/v1/auth/login', { identifier, password }, AuthEndpoint)), remember);
   }
 
   async register(username: string, email: string, password: string): Promise<void> {
-    this.store(await firstValueFrom(this.http.post<AuthResponse>('/api/v1/auth/register', { username, email, password }, AuthEndpoint)));
+    this.store(await firstValueFrom(this.http.post<AuthResponse>('/api/v1/auth/register', { username, email, password }, AuthEndpoint)), true);
   }
 
   async logout(): Promise<void> {
@@ -58,7 +58,7 @@ export class AuthService {
     }
 
     try {
-      this.store(await firstValueFrom(this.http.post<AuthResponse>('/api/v1/auth/refresh', { refreshToken }, AuthEndpoint)));
+      this.storePreservingMemory(await firstValueFrom(this.http.post<AuthResponse>('/api/v1/auth/refresh', { refreshToken }, AuthEndpoint)));
       return true;
     } catch {
       this.tokenStorage.clear();
@@ -67,8 +67,15 @@ export class AuthService {
     }
   }
 
-  private store(response: AuthResponse): void {
-    this.tokenStorage.set(response.accessToken, response.refreshToken);
+  private store(response: AuthResponse, remember: boolean): void {
+    this.tokenStorage.set(response.accessToken, response.refreshToken, remember);
+    this.session.set(response.user);
+  }
+
+  /** Refresh rotation: keep the token where the user originally stored it. */
+  private storePreservingMemory(response: AuthResponse): void {
+    const existing = this.tokenStorage.getRefreshToken();
+    this.tokenStorage.set(response.accessToken, response.refreshToken, localStorage.getItem('ttt.refreshToken') === existing);
     this.session.set(response.user);
   }
 }

@@ -37,7 +37,6 @@
   --animate-float-b: float-b 9s ease-in-out infinite;
   --animate-scale-in: scale-in 280ms var(--ease-out-expo);
   --animate-glow-breathe: glow-breathe 3.5s ease-in-out infinite;
-  --animate-cell-scan: cell-scan 2.4s ease-in-out infinite;
 }
 
 @keyframes pulse-ring {
@@ -86,16 +85,6 @@
 @keyframes glow-breathe {
   0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
-}
-
-/* Waiting-state mini board: cells light up in a diagonal sweep. */
-@keyframes cell-scan {
-  0%, 100% { opacity: 0.45; }
-  50% {
-    opacity: 1;
-    border-color: oklch(0.585 0.233 277.117 / 0.5);
-    box-shadow: 0 0 14px -2px oklch(0.585 0.233 277.117 / 0.3);
-  }
 }
 
 /* ===== Arena background: layered glows + grid overlay ===== */

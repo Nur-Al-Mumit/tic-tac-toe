@@ -6,6 +6,7 @@ import { AuthService } from '../../core/auth.service';
 import { GamesApi } from '../../core/games.api';
 import { SignalRService } from '../../core/signalr.service';
 import { problemMessage } from '../../core/problem';
+import { ToastService } from '../../core/toast.service';
 import { GameDto } from '../../core/models';
 
 /** Lobby: waiting games over REST + create/join/cancel; the list updates live via GameCreated/GameRemoved. */
@@ -35,19 +36,21 @@ import { GameDto } from '../../core/models';
       </div>
 
       @if (activeGame(); as active) {
-        <a [routerLink]="['/game', active.id]"
-           class="glass-card mb-4 flex items-center justify-between border-primary/40 p-4 transition-colors hover:border-primary">
+        <div class="glass-card mb-4 flex flex-wrap items-center justify-between gap-3 border-primary/40 p-4">
           <div class="flex items-center gap-3">
             <span class="animate-pulse inline-block h-2.5 w-2.5 rounded-full bg-success"></span>
             <div>
               <p class="text-sm font-bold">
                 You're in an active game vs {{ active.playerO ? (active.playerX.id === auth.user()?.id ? active.playerO.username : active.playerX.username) : '— waiting for an opponent' }}
               </p>
-              <p class="text-xs text-slate-400">It keeps running while you're away — jump back in, even from another device.</p>
+              <p class="text-xs text-slate-400">It keeps running while you're away. Rejoin from any device — or resign and move on.</p>
             </div>
           </div>
-          <span class="btn-cta">Return to game</span>
-        </a>
+          <div class="flex gap-2">
+            <a [routerLink]="['/game', active.id]" class="btn-cta">Return to game</a>
+            <button (click)="resign(active.id)" [disabled]="busy()" class="btn-ghost danger">Quit &amp; resign</button>
+          </div>
+        </div>
       }
 
       @if (error(); as message) {
@@ -111,6 +114,7 @@ export class LobbyPage implements OnInit, OnDestroy {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly hub = inject(SignalRService);
+  private readonly toasts = inject(ToastService);
 
   readonly games = signal<GameDto[]>([]);
   readonly activeGame = signal<GameDto | null>(null);
@@ -189,6 +193,21 @@ export class LobbyPage implements OnInit, OnDestroy {
     try {
       await this.api.cancel(game.id);
       this.games.update((games) => games.filter((g) => g.id !== game.id));
+    } catch (error) {
+      this.error.set(problemMessage(error instanceof HttpErrorResponse ? error : null));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  /** Quit the running game: forfeit on the server, then refresh the lobby state. */
+  async resign(gameId: string): Promise<void> {
+    this.busy.set(true);
+    try {
+      await this.api.leave(gameId);
+      this.activeGame.set(null);
+      this.toasts.info('You resigned the game.');
+      await this.load();
     } catch (error) {
       this.error.set(problemMessage(error instanceof HttpErrorResponse ? error : null));
     } finally {

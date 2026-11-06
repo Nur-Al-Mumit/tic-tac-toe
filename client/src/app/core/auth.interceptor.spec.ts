@@ -22,7 +22,7 @@ describe('authInterceptor', () => {
   });
 
   it('attaches the bearer token', async () => {
-    storage.set('access-1', 'refresh-1');
+    storage.set('access-1', 'refresh-1', true);
     const request = firstValueFrom(client.get('/api/v1/games'));
 
     const req = http.expectOne('/api/v1/games');
@@ -32,7 +32,7 @@ describe('authInterceptor', () => {
   });
 
   it('on 401: refreshes once and retries the original request with the new token', async () => {
-    storage.set('expired-access', 'refresh-1');
+    storage.set('expired-access', 'refresh-1', true);
     const request = firstValueFrom(client.get('/api/v1/games'));
 
     http.expectOne('/api/v1/games').flush(null, { status: 401, statusText: 'Unauthorized' });
@@ -55,7 +55,7 @@ describe('authInterceptor', () => {
   });
 
   it('propagates the 401 when the refresh also fails', async () => {
-    storage.set('expired-access', 'refresh-dead');
+    storage.set('expired-access', 'refresh-dead', true);
     const request = firstValueFrom(client.get('/api/v1/games'));
 
     http.expectOne('/api/v1/games').flush(null, { status: 401, statusText: 'Unauthorized' });

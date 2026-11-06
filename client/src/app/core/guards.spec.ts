@@ -14,7 +14,7 @@ describe('guards', () => {
   };
 
   function login() {
-    TestBed.inject(TokenStorage).set(tokens.accessToken, tokens.refreshToken);
+    TestBed.inject(TokenStorage).set(tokens.accessToken, tokens.refreshToken, true);
     TestBed.inject(AuthService)['session'].set(tokens.user); // simulate a live session
   }
 
