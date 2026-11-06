@@ -35,7 +35,7 @@ Each item is fully specified today and *not built* in V1:
 | Deferred feature | Spec lives in | Why it can wait |
 | --- | --- | --- |
 | Presence: `PresenceTracker`, online count, online players list, `PresenceChanged`, `GetOnlinePlayersQuery`, US-04 | [realtime-signalr](../02-backend/realtime-signalr.md) §presence | The game is live without knowing who else is online |
-| Live lobby updates: `lobby` group, `GameCreated`/`GameUpdated`/`GameRemoved` broadcasts, animated list transitions, US-05 live part | [realtime-signalr](../02-backend/realtime-signalr.md) | V1's REST list + Refresh covers joinability |
+| Live lobby updates — **shipped 2026-11-06**: `lobby` group with `GameCreated`/`GameRemoved` broadcasts (list updates itself; US-05 live part done). Still later: `GameUpdated` status changes, animated list transitions, presence-driven list | [realtime-signalr](../02-backend/realtime-signalr.md) | Presence remains the open piece |
 | Disconnect grace & auto-forfeit: `DisconnectGraceService` (30 s timers), `OpponentConnection` events, US-10 | [realtime-signalr](../02-backend/realtime-signalr.md) §grace | Explicit Leave/forfeit button resolves abandoned games in V1 |
 | Stale-Waiting sweep (15 min cancellation) | [realtime-signalr](../02-backend/realtime-signalr.md) | Hosts cancel manually in V1 |
 | Sophisticated reconnect/resync policy (queue-aware resync, grace countdown UI) | [realtime-signalr](../02-backend/realtime-signalr.md), [angular-architecture](../04-frontend/angular-architecture.md) | Basic reload-and-rejoin covers page refresh |

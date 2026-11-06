@@ -14,7 +14,12 @@ namespace TicTacToe.Api.Hubs;
 [Authorize]
 public sealed class GameHub(IMediator mediator, ICurrentUser currentUser) : Hub
 {
+    public const string LobbyGroupName = "lobby";
+
     public static string GroupName(Guid gameId) => $"game-{gameId}";
+
+    public override Task OnConnectedAsync()
+        => Groups.AddToGroupAsync(Context.ConnectionId, LobbyGroupName);
 
     public async Task JoinGameRoom(Guid gameId)
     {

@@ -20,6 +20,8 @@ export class SignalRService {
     onMoveMade?: (game: unknown) => void;
     onGameFinished?: (game: unknown) => void;
     onGameCancelled?: (payload: { gameId: string }) => void;
+    onGameCreated?: (game: unknown) => void;
+    onGameRemoved?: (payload: { gameId: string }) => void;
   }): Promise<void> {
     await this.disconnect();
 
@@ -32,6 +34,8 @@ export class SignalRService {
     this.connection.on('MoveMade', (game) => handlers.onMoveMade?.(game));
     this.connection.on('GameFinished', (game) => handlers.onGameFinished?.(game));
     this.connection.on('GameCancelled', (payload) => handlers.onGameCancelled?.(payload));
+    this.connection.on('GameCreated', (game) => handlers.onGameCreated?.(game));
+    this.connection.on('GameRemoved', (payload) => handlers.onGameRemoved?.(payload));
 
     this.connection.onreconnecting(() => this.state.set('reconnecting'));
     this.connection.onreconnected(() => this.state.set('connected'));

@@ -7,9 +7,9 @@ using TicTacToe.Domain.Entities.GameAggregate;
 namespace TicTacToe.Application.Features.Games;
 
 /// <summary>Assembles GameDto for a (possibly uncommitted) aggregate, or from a read-side reload.</summary>
-public sealed class GameDtoLoader(IReadDbContext readDbContext, IPlayerProfileRepository profileRepository)
+public class GameDtoLoader(IReadDbContext readDbContext, IPlayerProfileRepository profileRepository)
 {
-    public async Task<GameDto> LoadAsync(Game game, CancellationToken cancellationToken)
+    public virtual async Task<GameDto> LoadAsync(Game game, CancellationToken cancellationToken)
     {
         var ids = new List<Guid> { game.PlayerXId };
         if (game.PlayerOId is { } o)
@@ -26,7 +26,7 @@ public sealed class GameDtoLoader(IReadDbContext readDbContext, IPlayerProfileRe
     }
 
     /// <summary>Read-side load (no tracking, moves included for the board); null when the game does not exist.</summary>
-    public async Task<GameDto?> LoadByIdAsync(Guid gameId, CancellationToken cancellationToken)
+    public virtual async Task<GameDto?> LoadByIdAsync(Guid gameId, CancellationToken cancellationToken)
     {
         var game = await readDbContext.Games
             .Include(g => g.Moves)

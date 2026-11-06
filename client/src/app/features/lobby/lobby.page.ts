@@ -1,9 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { NavbarComponent } from '../../shared/navbar.component';
 import { AuthService } from '../../core/auth.service';
 import { GamesApi } from '../../core/games.api';
+import { SignalRService } from '../../core/signalr.service';
 import { problemMessage } from '../../core/problem';
 import { GameDto } from '../../core/models';
 
@@ -21,6 +22,9 @@ import { GameDto } from '../../core/models';
           <p class="mt-1 text-sm text-slate-400">Join someone's game or create your own.</p>
         </div>
         <div class="flex gap-2">
+          <span class="mr-1 self-center font-mono text-xs uppercase tracking-wider {{ connection() === 'connected' ? 'text-success' : 'text-slate-500' }}">
+            {{ connection() === 'connected' ? '● live' : '● offline' }}
+          </span>
           <button (click)="load()"
                   class="rounded-lg border border-surface-border px-3 py-2 text-sm text-slate-300 transition-colors hover:border-primary hover:text-slate-100">
             @if (loading()) { Loading… } @else { Refresh }
@@ -83,8 +87,10 @@ import { GameDto } from '../../core/models';
     </main>
   `,
 })
-export class LobbyPage implements OnInit {
+export class LobbyPage implements OnInit, OnDestroy {
   private readonly api = inject(GamesApi);
+  private readonly hub = inject(SignalRService);
+  readonly connection = this.hub.state;
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
@@ -95,6 +101,24 @@ export class LobbyPage implements OnInit {
 
   ngOnInit(): void {
     void this.load();
+    // Live lobby: new waiting games appear, joined/cancelled games disappear — no refresh (US-05).
+    void this.hub.connect({
+      onGameCreated: (game) => this.addGame(game as GameDto),
+      onGameRemoved: ({ gameId }) => this.games.update((games) => games.filter((g) => g.id !== gameId)),
+    });
+  }
+
+  ngOnDestroy(): void {
+    void this.hub.disconnect();
+  }
+
+  private addGame(game: GameDto): void {
+    if (game.status !== 'Waiting') {
+      return;
+    }
+    this.games.update((games) =>
+      games.some((g) => g.id === game.id) ? games : [game, ...games],
+    );
   }
 
   async load(): Promise<void> {
