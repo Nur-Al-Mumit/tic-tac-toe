@@ -2,7 +2,7 @@
 
 *How the Multiplayer Tic-Tac-Toe MVP runs everywhere: local development workflows, the docker-compose topology, the api and client Dockerfiles, per-environment configuration, migration and health-check strategy, logging, backups and day-to-day operational tasks.*
 
-Everything here implements the deployment view of the [system architecture](../01-architecture/system-architecture.md#6-deployment-view-summary) and the fixed deployment facts of the [PRD](../00-product/PRD.md#7-technical-blueprint-summary): three compose services (`postgres`, `api`, `client`), EF migrations on startup in Development and as a CI/CD step elsewhere, health checks at `/health`, and Serilog JSON console logging with correlation IDs. The pipeline that builds and ships these images is covered in [ci-cd.md](ci-cd.md).
+Everything here implements the deployment view of the [system architecture](../01-architecture/system-architecture.md#6-deployment-view-summary) and the fixed deployment facts of the [PRD](../00-product/PRD.md#7-technical-blueprint-summary): three compose services (`postgres`, `api`, `client`), EF migrations on startup in Development and as a CI/CD step elsewhere, health checks at `/health`, and Serilog logging to console **and file** (compact JSON, `Logs/tictactoe-YYYYMMDD.log`, daily rolling, 14 retained) with correlation IDs — compose persists `/app/Logs` in the `tictactoe-logs` volume. The pipeline that builds and ships these images is covered in [ci-cd.md](ci-cd.md).
 
 ## 1. Local Development Options
 
@@ -392,7 +392,7 @@ If the MVP later moves to an orchestrator, the same endpoint maps directly: read
 
 ## 8. Logging and Observability
 
-- **Sink:** Serilog → console in compact JSON; Docker's `json-file` driver ships events to `docker compose logs`. Log rotation (e.g. `max-size: 50m`, `max-file: 5`) is configured in the VPS daemon.json so disk cannot fill.
+- **Sinks:** Serilog → console **and file** in compact JSON (`Logs/tictactoe-YYYYMMDD.log`, daily rolling, 14 files retained — `retainedFileCountLimit`); Docker's `json-file` driver ships console events to `docker compose logs`, while the `tictactoe-logs` volume keeps the files across container restarts. Host-level rotation (e.g. `max-size: 50m`, `max-file: 5`) can additionally be set in the VPS daemon.json.
 - **Correlation IDs:** middleware assigns or accepts an `X-Correlation-ID` per request and pushes it into the Serilog `LogContext`; every log line inside that request — including SignalR hub invocations — carries it, and the header is echoed on the response.
 - **Event shape** (one move, one line):
 

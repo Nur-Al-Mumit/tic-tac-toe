@@ -29,6 +29,8 @@ services:
       Cors__Origins: http://localhost:8080
     ports:
       - "8081:8080"
+    volumes:
+      - tictactoe-logs:/app/Logs
     depends_on:
       postgres:
         condition: service_healthy
@@ -60,3 +62,4 @@ services:
 
 volumes:
   tictactoe-pgdata:
+  tictactoe-logs:
