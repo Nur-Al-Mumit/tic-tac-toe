@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { NavbarComponent } from '../../shared/navbar.component';
 import { AuthService } from '../../core/auth.service';
@@ -7,34 +7,18 @@ import { GamesApi } from '../../core/games.api';
 import { SignalRService } from '../../core/signalr.service';
 import { problemMessage } from '../../core/problem';
 import { ToastService } from '../../core/toast.service';
-import { GameDto } from '../../core/models';
+import { GameDto, OnlinePlayerDto } from '../../core/models';
 
-/** Lobby: waiting games over REST + create/join/cancel; the list updates live via GameCreated/GameRemoved. */
+type LobbyTab = 'open' | 'inprogress';
+
+/** Lobby: live game list (tabs) + online players panel; updates arrive over the hub, no refresh. */
 @Component({
   selector: 'ttt-lobby-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NavbarComponent, RouterLink],
   template: `
     <ttt-navbar />
-    <main class="mx-auto max-w-3xl px-4 py-8">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 class="text-2xl font-black tracking-tight">Open games</h1>
-          <p class="mt-1 text-sm text-slate-400">
-            <span class="font-mono {{ connection() === 'connected' ? 'text-success' : 'text-slate-500' }}">
-              {{ connection() === 'connected' ? '●' : '○' }} {{ connection() === 'connected' ? 'live' : 'offline' }}
-            </span>
-            — join someone's game or create your own.
-          </p>
-        </div>
-        <div class="flex items-center gap-2">
-          <button (click)="load()" class="btn-ghost">Refresh</button>
-          <button (click)="create()" [disabled]="busy()" class="btn-cta">
-            + Create game
-          </button>
-        </div>
-      </div>
-
+    <main class="mx-auto max-w-6xl px-4 py-8">
       @if (activeGame(); as active) {
         <div class="glass-card mb-4 flex flex-wrap items-center justify-between gap-3 border-primary/40 p-4">
           <div class="flex items-center gap-3">
@@ -53,85 +37,143 @@ import { GameDto } from '../../core/models';
         </div>
       }
 
-      @if (error(); as message) {
-        <p role="alert" class="mt-4 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-red-400">
-          {{ message }}
-        </p>
-      }
-
-      @if (!loading() && games().length === 0) {
-        <div class="glass-card mt-8 border-dashed p-12 text-center">
-          <div class="mx-auto mb-4 grid w-fit grid-cols-3 gap-1.5 opacity-60" aria-hidden="true">
-            @for (cell of emptyBoard; track $index) {
-              <span class="h-8 w-8 rounded-lg border border-surface-border bg-bg/60"></span>
-            }
-          </div>
-          <p class="font-bold text-slate-200">No open games right now</p>
-          <p class="mt-1 text-sm text-slate-500">Create one — it appears live in every connected lobby.</p>
-        </div>
-      }
-
-      <ul class="mt-6 space-y-3">
-        @for (game of games(); track game.id; let i = $index) {
-          <li class="glass-card animate-rise group flex items-center justify-between p-4 transition-[transform,border-color] duration-150 hover:-translate-y-0.5 hover:border-primary/40"
-              [style.animation-delay.ms]="i * 45">
-            <div class="flex items-center gap-3.5">
-              <span class="flex h-11 w-11 items-center justify-center rounded-xl border border-mark-x/30 bg-mark-x/10 font-mono text-lg font-black text-mark-x glow-x">
-                {{ game.playerX.username[0].toUpperCase() }}
-              </span>
-              <div>
-                <p class="font-bold">
-                  <span class="font-mono text-mark-x">X</span>
-                  {{ game.playerX.username }}
-                  @if (game.playerO; as opponent) {
-                    <span class="mx-1 text-xs font-semibold uppercase tracking-wider text-slate-500">vs</span>
-                    <span class="font-mono text-mark-o">O</span>
-                    {{ opponent.username }}
-                  } @else {
-                    <span class="ml-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 align-middle text-[10px] font-bold uppercase tracking-wider text-amber-400">
-                      waiting
-                    </span>
-                  }
-                </p>
-                <p class="mt-0.5 font-mono text-xs text-slate-500">created {{ shortTime(game.createdAtUtc) }}</p>
-              </div>
+      <div class="grid gap-6 lg:grid-cols-3">
+        <!-- games -->
+        <section class="lg:col-span-2">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-1 rounded-xl border border-surface-border bg-surface/70 p-1" role="tablist" aria-label="Game filters">
+              <button role="tab" [attr.aria-selected]="tab() === 'open'" (click)="tab.set('open')"
+                      class="rounded-lg px-3.5 py-1.5 text-sm font-bold transition-colors {{ tab() === 'open' ? 'bg-primary text-white' : 'text-slate-400 hover:text-slate-100' }}">
+                Open @if (openGames().length) { <span class="ml-1 font-mono text-xs opacity-70">{{ openGames().length }}</span> }
+              </button>
+              <button role="tab" [attr.aria-selected]="tab() === 'inprogress'" (click)="tab.set('inprogress')"
+                      class="rounded-lg px-3.5 py-1.5 text-sm font-bold transition-colors {{ tab() === 'inprogress' ? 'bg-primary text-white' : 'text-slate-400 hover:text-slate-100' }}">
+                In progress @if (runningGames().length) { <span class="ml-1 font-mono text-xs opacity-70">{{ runningGames().length }}</span> }
+              </button>
             </div>
-            <div class="flex gap-2">
-              @if (isMine(game)) {
-                <button (click)="cancel(game)" [disabled]="busy()" class="btn-ghost danger">Cancel</button>
-              } @else {
-                <button (click)="join(game)" [disabled]="busy()" class="btn-cta">Join</button>
+            <span class="font-mono text-xs uppercase tracking-wider {{ connection() === 'connected' ? 'text-success' : 'text-slate-500' }}">
+              {{ connection() === 'connected' ? '●' : '○' }} {{ connection() === 'connected' ? 'live' : 'offline' }}
+            </span>
+            <button (click)="load()" class="btn-ghost">Refresh</button>
+            <button (click)="create()" [disabled]="busy()" class="btn-cta">+ Create game</button>
+          </div>
+
+          @if (error(); as message) {
+            <p role="alert" class="mt-4 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-red-400">{{ message }}</p>
+          }
+
+          @if (!loading() && shownGames().length === 0) {
+            <div class="glass-card mt-5 border-dashed p-10 text-center">
+              <p class="font-bold text-slate-200">{{ tab() === 'open' ? 'No open games right now' : 'No games in progress' }}</p>
+              @if (tab() === 'open') {
+                <p class="mt-1 text-sm text-slate-500">Create one — it appears live in every connected lobby.</p>
               }
             </div>
-          </li>
-        }
-      </ul>
+          }
+
+          <ul class="mt-5 space-y-3">
+            @for (game of shownGames(); track game.id; let i = $index) {
+              <li class="glass-card animate-rise group flex items-center justify-between p-4 transition-[transform,border-color] duration-150 hover:-translate-y-0.5 hover:border-primary/40"
+                  [style.animation-delay.ms]="i * 45">
+                <div class="flex items-center gap-3.5">
+                  <span class="flex h-11 w-11 items-center justify-center rounded-xl border font-mono text-lg font-black"
+                        [class.border-mark-x/30]="!game.playerO" [class.bg-mark-x/10]="!game.playerO" [class.text-mark-x]="!game.playerO"
+                        [class.border-surface-border]="game.playerO" [class.text-slate-300]="game.playerO">
+                    {{ game.playerX.username[0].toUpperCase() }}
+                  </span>
+                  <div>
+                    <p class="font-bold">
+                      <span class="font-mono text-mark-x">X</span>
+                      {{ game.playerX.username }}
+                      @if (game.playerO; as opponent) {
+                        <span class="mx-1 text-xs font-semibold uppercase tracking-wider text-slate-500">vs</span>
+                        <span class="font-mono text-mark-o">O</span>
+                        {{ opponent.username }}
+                      } @else {
+                        <span class="ml-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 align-middle text-[10px] font-bold uppercase tracking-wider text-amber-400">waiting</span>
+                      }
+                    </p>
+                    <p class="mt-0.5 font-mono text-xs text-slate-500">created {{ shortTime(game.createdAtUtc) }}</p>
+                  </div>
+                </div>
+                <div class="flex gap-2">
+                  @if (isMine(game) && game.status === 'Waiting') {
+                    <button (click)="cancel(game)" [disabled]="busy()" class="btn-ghost danger">Cancel</button>
+                  } @else if (game.status === 'Waiting') {
+                    <button (click)="join(game)" [disabled]="busy()" class="btn-cta">Join</button>
+                  } @else if (game.status === 'InProgress' && isMine(game)) {
+                    <a [routerLink]="['/game', game.id]" class="btn-cta">Resume</a>
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+        </section>
+
+        <!-- online players -->
+        <aside class="glass-card h-fit p-4" aria-label="Online players">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-extrabold uppercase tracking-wider text-slate-300">Online</h2>
+            <span class="font-mono text-xs text-success">{{ players().length }} online</span>
+          </div>
+          <ul class="mt-3 space-y-1.5">
+            @for (player of players(); track player.id; let i = $index) {
+              <li class="animate-rise flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-white/5"
+                  [style.animation-delay.ms]="i * 30">
+                <span class="relative flex h-2 w-2">
+                  <span class="absolute inline-flex h-full w-full rounded-full {{ player.inGame ? 'bg-amber-400' : 'bg-success' }} opacity-60"></span>
+                  <span class="relative inline-flex h-2 w-2 rounded-full {{ player.inGame ? 'bg-amber-400' : 'bg-success' }}"></span>
+                </span>
+                <span class="flex h-7 w-7 items-center justify-center rounded-full border border-primary/30 bg-primary/10 font-mono text-xs font-bold text-primary">
+                  {{ player.username[0].toUpperCase() }}
+                </span>
+                <span class="truncate text-sm font-semibold" [class.text-slate-500]="player.id === auth.user()?.id">
+                  {{ player.username }}{{ player.id === auth.user()?.id ? ' (you)' : '' }}
+                </span>
+                <span class="ml-auto text-[10px] font-bold uppercase tracking-wider {{ player.inGame ? 'text-amber-400' : 'text-success' }}">
+                  {{ player.inGame ? 'in game' : 'available' }}
+                </span>
+              </li>
+            } @empty {
+              <li class="px-2 py-6 text-center text-sm text-slate-500">Nobody else online</li>
+            }
+          </ul>
+        </aside>
+      </div>
     </main>
   `,
 })
 export class LobbyPage implements OnInit, OnDestroy {
   private readonly api = inject(GamesApi);
-  private readonly auth = inject(AuthService);
+  readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly hub = inject(SignalRService);
   private readonly toasts = inject(ToastService);
 
   readonly games = signal<GameDto[]>([]);
+  readonly players = signal<OnlinePlayerDto[]>([]);
   readonly activeGame = signal<GameDto | null>(null);
+  readonly tab = signal<LobbyTab>('open');
   readonly loading = signal(false);
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
   readonly connection = this.hub.state;
 
-  readonly emptyBoard = Array(9).fill(0);
+  readonly openGames = computed(() => this.games().filter((g) => g.status === 'Waiting'));
+  readonly runningGames = computed(() => this.games().filter((g) => g.status === 'InProgress'));
+  readonly shownGames = computed(() => (this.tab() === 'open' ? this.openGames() : this.runningGames()));
 
   ngOnInit(): void {
     void this.load();
+    void this.api.online().then((p) => this.players.set(p)).catch(() => this.players.set([]));
     void this.api.active().then((g) => this.activeGame.set(g)).catch(() => this.activeGame.set(null));
-    // Live lobby: new waiting games appear, joined/cancelled games disappear — no refresh (US-05).
+
+    // Live lobby (US-04/US-05): games and presence update over the hub — no refresh.
     void this.hub.connect({
       onGameCreated: (game) => this.addGame(game as GameDto),
+      onGameUpdated: (game) => this.updateGame(game as GameDto),
       onGameRemoved: ({ gameId }) => this.games.update((games) => games.filter((g) => g.id !== gameId)),
+      onPresenceChanged: ({ players }) => this.players.set(players),
     });
   }
 
@@ -143,16 +185,22 @@ export class LobbyPage implements OnInit, OnDestroy {
     if (game.status !== 'Waiting') {
       return;
     }
-    this.games.update((games) =>
-      games.some((g) => g.id === game.id) ? games : [game, ...games],
-    );
+    this.games.update((games) => (games.some((g) => g.id === game.id) ? games : [game, ...games]));
+  }
+
+  private updateGame(game: GameDto): void {
+    this.games.update((games) => {
+      const rest = games.filter((g) => g.id !== game.id);
+      return game.status === 'Waiting' || game.status === 'InProgress' ? [game, ...rest] : rest;
+    });
   }
 
   async load(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
     try {
-      this.games.set(await this.api.listWaiting());
+      this.games.set(await this.api.list());
+      this.players.set(await this.api.online().catch(() => this.players()));
     } catch (error) {
       this.error.set(problemMessage(error instanceof HttpErrorResponse ? error : null));
     } finally {
@@ -180,7 +228,6 @@ export class LobbyPage implements OnInit, OnDestroy {
       await this.api.join(game.id);
       await this.router.navigateByUrl(`/game/${game.id}`);
     } catch (error) {
-      // The classic case: someone else joined first — the list refresh shows it as gone.
       this.error.set(problemMessage(error instanceof HttpErrorResponse ? error : null));
       await this.load();
     } finally {
@@ -216,7 +263,7 @@ export class LobbyPage implements OnInit, OnDestroy {
   }
 
   isMine(game: GameDto): boolean {
-    return this.auth.user()?.id === game.playerX.id;
+    return this.auth.user()?.id === game.playerX.id || this.auth.user()?.id === game.playerO?.id;
   }
 
   shortTime(isoUtc: string): string {

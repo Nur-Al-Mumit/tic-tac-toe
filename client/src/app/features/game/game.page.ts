@@ -45,6 +45,11 @@ import { DemoBoardComponent } from '../../shared/demo-board.component';
               {{ connection() === 'connected' ? '● live' : connection() === 'reconnecting' ? '● reconnecting' : '● offline' }}
             </span>
             <span class="mt-0.5 font-mono text-lg font-black text-slate-600">VS</span>
+            @if (!opponentConnected() && game.status === 'InProgress') {
+              <span class="mt-0.5 whitespace-nowrap text-[10px] font-bold uppercase tracking-wider text-amber-400" aria-live="polite">
+                ⚠ opponent away
+              </span>
+            }
           </div>
           <div class="flex items-center gap-3 rounded-xl px-2 py-1.5 text-right transition-shadow"
                [class.animate-pulse-ring]="game.status === 'InProgress' && game.currentTurn === 'O'">
@@ -70,7 +75,7 @@ import { DemoBoardComponent } from '../../shared/demo-board.component';
             <ttt-demo-board size="lg" />
 
             <div class="text-center">
-              <h2 class="text-lg font-bold text-slate-200">Waiting for an opponent<span class="animate-pulse">…</span></h2>
+              <h2 class="text-shimmer animate-text-shimmer text-lg font-bold">Waiting for an opponent<span class="wait-dots ml-0.5" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span></h2>
               <p class="mt-1 text-xs text-slate-500">Your game is live in the lobby — anyone can join.</p>
             </div>
 
@@ -154,6 +159,7 @@ export class GamePage implements OnInit, OnDestroy {
   readonly error = signal<string | null>(null);
   readonly shake = signal(false);
   readonly connection = this.hub.state;
+  readonly opponentConnected = signal(true);
 
   /** Ticks every second so the move clock counts down (JetBrains Mono per the design system). */
   readonly now = signal(Date.now());
@@ -182,6 +188,13 @@ export class GamePage implements OnInit, OnDestroy {
       onMoveMade: (game) => this.apply(game),
       onGameFinished: (game) => this.apply(game),
       onGameCancelled: () => void this.router.navigateByUrl('/lobby'),
+      onOpponentConnection: ({ playerId, connected }) => {
+        const me = this.auth.user()?.id;
+        const opponentId = this.game()?.playerX.id === me ? this.game()?.playerO?.id : this.game()?.playerX.id;
+        if (playerId === opponentId) {
+          this.opponentConnected.set(connected);
+        }
+      },
     });
     await this.hub.joinGameRoom(gameId);
     this.clock = setInterval(() => this.now.set(Date.now()), 1000);

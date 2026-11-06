@@ -23,6 +23,9 @@ public sealed class SignalRGameNotifier(IHubContext<GameHub> hubContext) : IGame
     public Task LobbyGameAddedAsync(GameDto game, CancellationToken cancellationToken = default)
         => hubContext.Clients.Group(GameHub.LobbyGroupName).SendAsync("GameCreated", game, cancellationToken);
 
+    public Task LobbyGameUpdatedAsync(GameDto game, CancellationToken cancellationToken = default)
+        => hubContext.Clients.Group(GameHub.LobbyGroupName).SendAsync("GameUpdated", game, cancellationToken);
+
     public Task LobbyGameRemovedAsync(Guid gameId, CancellationToken cancellationToken = default)
         => hubContext.Clients.Group(GameHub.LobbyGroupName).SendAsync("GameRemoved", new { gameId }, cancellationToken);
 }

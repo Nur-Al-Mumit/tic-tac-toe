@@ -25,6 +25,12 @@ public class GameRepository(ApplicationDbContext context) : Repository<Game, Gui
             .Where(g => (g.Status == GameStatus.Waiting || g.Status == GameStatus.InProgress) && g.MoveDeadlineUtc != null && g.MoveDeadlineUtc <= utcNow)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<Game>> GetActiveGamesAsync(CancellationToken cancellationToken)
+        => await context.Games
+            .AsNoTracking()
+            .Where(g => g.Status == GameStatus.Waiting || g.Status == GameStatus.InProgress)
+            .ToListAsync(cancellationToken);
+
     public void Detach(Game game)
     {
         context.Entry(game).State = EntityState.Detached;

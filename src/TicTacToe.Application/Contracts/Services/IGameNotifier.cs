@@ -19,6 +19,9 @@ public interface IGameNotifier
     /// <summary>A new waiting game appeared in the lobby.</summary>
     Task LobbyGameAddedAsync(GameDto game, CancellationToken cancellationToken = default);
 
+    /// <summary>A lobby game changed status (started → In Progress tab).</summary>
+    Task LobbyGameUpdatedAsync(GameDto game, CancellationToken cancellationToken = default);
+
     /// <summary>A game left the joinable list (started, cancelled or finished).</summary>
     Task LobbyGameRemovedAsync(Guid gameId, CancellationToken cancellationToken = default);
 }

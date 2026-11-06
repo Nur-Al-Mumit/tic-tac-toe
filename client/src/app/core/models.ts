@@ -44,3 +44,9 @@ export interface GameDto {
 }
 
 export type LobbyGameDto = GameDto;
+
+export interface OnlinePlayerDto {
+  id: string;
+  username: string;
+  inGame: boolean;
+}

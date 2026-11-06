@@ -29,10 +29,9 @@ public sealed class GameStartedNotificationHandler(IGameNotifier notifier, GameD
         if (dto is not null)
         {
             await notifier.GameStartedAsync(dto, cancellationToken);
+            // The game moves from the Open tab to In Progress — not removed from the lobby view.
+            await notifier.LobbyGameUpdatedAsync(dto, cancellationToken);
         }
-
-        // The game is no longer joinable — it leaves the lobby list.
-        await notifier.LobbyGameRemovedAsync(notification.DomainEvent.GameId, cancellationToken);
     }
 }
 

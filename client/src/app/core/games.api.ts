@@ -1,15 +1,15 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { GameDto } from './models';
+import { GameDto, OnlinePlayerDto } from './models';
 
 /** Thin typed wrapper over /api/v1/games (api-spec §2) — no business logic here. */
 @Injectable({ providedIn: 'root' })
 export class GamesApi {
   private readonly http = inject(HttpClient);
 
-  listWaiting(): Promise<GameDto[]> {
-    return firstValueFrom(this.http.get<GameDto[]>('/api/v1/games', { params: { status: 'waiting' } }));
+  list(): Promise<GameDto[]> {
+    return firstValueFrom(this.http.get<GameDto[]>('/api/v1/games'));
   }
 
   byId(id: string): Promise<GameDto> {
@@ -38,5 +38,9 @@ export class GamesApi {
 
   active(): Promise<GameDto | null> {
     return firstValueFrom(this.http.get<GameDto | null>('/api/v1/games/active'));
+  }
+
+  online(): Promise<OnlinePlayerDto[]> {
+    return firstValueFrom(this.http.get<OnlinePlayerDto[]>('/api/v1/players/online'));
   }
 }

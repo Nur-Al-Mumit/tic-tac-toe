@@ -1,5 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
+import { OnlinePlayerDto } from './models';
 import { TokenStorage } from './token.storage';
 
 export type ConnectionState = 'connected' | 'reconnecting' | 'disconnected';
@@ -21,7 +22,10 @@ export class SignalRService {
     onGameFinished?: (game: unknown) => void;
     onGameCancelled?: (payload: { gameId: string }) => void;
     onGameCreated?: (game: unknown) => void;
+    onGameUpdated?: (game: unknown) => void;
     onGameRemoved?: (payload: { gameId: string }) => void;
+    onPresenceChanged?: (payload: { onlineCount: number; players: OnlinePlayerDto[] }) => void;
+    onOpponentConnection?: (payload: { playerId: string; connected: boolean }) => void;
   }): Promise<void> {
     await this.disconnect();
 
@@ -35,7 +39,10 @@ export class SignalRService {
     this.connection.on('GameFinished', (game) => handlers.onGameFinished?.(game));
     this.connection.on('GameCancelled', (payload) => handlers.onGameCancelled?.(payload));
     this.connection.on('GameCreated', (game) => handlers.onGameCreated?.(game));
+    this.connection.on('GameUpdated', (game) => handlers.onGameUpdated?.(game));
     this.connection.on('GameRemoved', (payload) => handlers.onGameRemoved?.(payload));
+    this.connection.on('PresenceChanged', (payload) => handlers.onPresenceChanged?.(payload));
+    this.connection.on('OpponentConnection', (payload) => handlers.onOpponentConnection?.(payload));
 
     this.connection.onreconnecting(() => this.state.set('reconnecting'));
     this.connection.onreconnected(() => this.state.set('connected'));

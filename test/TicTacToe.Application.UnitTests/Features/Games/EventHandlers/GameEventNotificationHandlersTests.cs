@@ -43,7 +43,7 @@ public class GameEventNotificationHandlersTests
             .Handle(new DomainEventNotification<GameStarted>(new GameStarted(GameId, Guid.NewGuid(), Guid.NewGuid(), Now)), CancellationToken.None);
 
         await notifier.Received(1).GameStartedAsync(Arg.Any<GameDto>(), Arg.Any<CancellationToken>());
-        await notifier.Received(1).LobbyGameRemovedAsync(GameId, Arg.Any<CancellationToken>());
+        await notifier.Received(1).LobbyGameUpdatedAsync(Arg.Any<GameDto>(), Arg.Any<CancellationToken>());
     }
 
     [Test]

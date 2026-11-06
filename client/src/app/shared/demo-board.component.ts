@@ -90,14 +90,16 @@ export class DemoBoardComponent {
     }
   }
 
-  /** Generates a random legal match: alternating turns on random empty cells, stopping at a win or draw. */
+  /** Generates a random legal match: alternating turns on random empty cells, stopping at a win or draw.
+   *  The first mover is random too — otherwise X's first-move advantage would make X win almost every loop. */
   private generateMatch(): void {
     const board: Array<DemoMark | null> = Array(9).fill(null);
     const moves: Array<{ index: number; mark: DemoMark }> = [];
     this.winningLine = null;
+    const firstMark: DemoMark = Math.random() < 0.5 ? 'X' : 'O';
 
     for (let turn = 0; turn < 9; turn++) {
-      const mark: DemoMark = turn % 2 === 0 ? 'X' : 'O';
+      const mark: DemoMark = turn % 2 === 0 ? firstMark : firstMark === 'X' ? 'O' : 'X';
       const empty = board.flatMap((cell, index) => (cell ? [] : [index]));
       if (empty.length === 0) {
         break;

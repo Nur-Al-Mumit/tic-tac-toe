@@ -15,4 +15,7 @@ public interface IGameRepository : IRepository<Game, Guid>
 
     /// <summary>InProgress games whose move deadline has passed (the timeout sweeper's input).</summary>
     Task<IReadOnlyList<Game>> GetTimedOutGamesAsync(DateTime utcNow, CancellationToken cancellationToken);
+
+    /// <summary>All Waiting/InProgress games (presence "In game" status, one query).</summary>
+    Task<IReadOnlyList<Game>> GetActiveGamesAsync(CancellationToken cancellationToken);
 }
