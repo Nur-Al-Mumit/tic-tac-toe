@@ -8,7 +8,7 @@ import { SignalRService } from '../../core/signalr.service';
 import { problemMessage } from '../../core/problem';
 import { GameDto } from '../../core/models';
 
-/** V1 lobby slice: waiting games over REST + create/join/cancel (live updates arrive in V1.1). */
+/** Lobby: waiting games over REST + create/join/cancel; the list updates live via GameCreated/GameRemoved. */
 @Component({
   selector: 'ttt-lobby-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -16,22 +16,19 @@ import { GameDto } from '../../core/models';
   template: `
     <ttt-navbar />
     <main class="mx-auto max-w-3xl px-4 py-8">
-      <div class="flex items-center justify-between">
+      <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 class="text-2xl font-bold">Open games</h1>
-          <p class="mt-1 text-sm text-slate-400">Join someone's game or create your own.</p>
+          <h1 class="text-2xl font-black tracking-tight">Open games</h1>
+          <p class="mt-1 text-sm text-slate-400">
+            <span class="font-mono {{ connection() === 'connected' ? 'text-success' : 'text-slate-500' }}">
+              {{ connection() === 'connected' ? '●' : '○' }} {{ connection() === 'connected' ? 'live' : 'offline' }}
+            </span>
+            — join someone's game or create your own.
+          </p>
         </div>
-        <div class="flex gap-2">
-          <span class="mr-1 self-center font-mono text-xs uppercase tracking-wider {{ connection() === 'connected' ? 'text-success' : 'text-slate-500' }}">
-            {{ connection() === 'connected' ? '● live' : '● offline' }}
-          </span>
-          <button (click)="load()"
-                  class="rounded-lg border border-surface-border px-3 py-2 text-sm text-slate-300 transition-colors hover:border-primary hover:text-slate-100">
-            @if (loading()) { Loading… } @else { Refresh }
-          </button>
-          <button (click)="create()"
-                  [disabled]="busy()"
-                  class="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-primary-hover disabled:opacity-50">
+        <div class="flex items-center gap-2">
+          <button (click)="load()" class="btn-ghost">Refresh</button>
+          <button (click)="create()" [disabled]="busy()" class="btn-cta">
             + Create game
           </button>
         </div>
@@ -44,41 +41,47 @@ import { GameDto } from '../../core/models';
       }
 
       @if (!loading() && games().length === 0) {
-        <div class="mt-8 rounded-card border border-dashed border-surface-border bg-surface/50 p-12 text-center">
-          <p class="font-mono text-3xl">∅</p>
-          <p class="mt-2 text-sm text-slate-400">No open games right now — create one and wait for an opponent.</p>
+        <div class="glass-card mt-8 border-dashed p-12 text-center">
+          <div class="mx-auto mb-4 grid w-fit grid-cols-3 gap-1.5 opacity-60" aria-hidden="true">
+            @for (cell of emptyBoard; track $index) {
+              <span class="h-8 w-8 rounded-lg border border-surface-border bg-bg/60"></span>
+            }
+          </div>
+          <p class="font-bold text-slate-200">No open games right now</p>
+          <p class="mt-1 text-sm text-slate-500">Create one — it appears live in every connected lobby.</p>
         </div>
       }
 
       <ul class="mt-6 space-y-3">
-        @for (game of games(); track game.id) {
-          <li class="animate-fade-in flex items-center justify-between rounded-card border border-surface-border bg-surface p-4">
-            <div>
-              <p class="font-semibold">
-                <span class="font-mono text-mark-x">X</span>
-                {{ game.playerX.username }}
-                @if (game.playerO; as opponent) {
-                  <span class="text-slate-500">vs</span>
-                  <span class="font-mono text-mark-o">O</span>
-                  {{ opponent.username }}
-                }
-              </p>
-              <p class="mt-0.5 text-xs text-slate-500">
-                {{ game.status }} · created {{ shortTime(game.createdAtUtc) }}
-              </p>
+        @for (game of games(); track game.id; let i = $index) {
+          <li class="glass-card animate-rise group flex items-center justify-between p-4 transition-[transform,border-color] duration-150 hover:-translate-y-0.5 hover:border-primary/40"
+              [style.animation-delay.ms]="i * 45">
+            <div class="flex items-center gap-3.5">
+              <span class="flex h-11 w-11 items-center justify-center rounded-xl border border-mark-x/30 bg-mark-x/10 font-mono text-lg font-black text-mark-x glow-x">
+                {{ game.playerX.username[0].toUpperCase() }}
+              </span>
+              <div>
+                <p class="font-bold">
+                  <span class="font-mono text-mark-x">X</span>
+                  {{ game.playerX.username }}
+                  @if (game.playerO; as opponent) {
+                    <span class="mx-1 text-xs font-semibold uppercase tracking-wider text-slate-500">vs</span>
+                    <span class="font-mono text-mark-o">O</span>
+                    {{ opponent.username }}
+                  } @else {
+                    <span class="ml-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 align-middle text-[10px] font-bold uppercase tracking-wider text-amber-400">
+                      waiting
+                    </span>
+                  }
+                </p>
+                <p class="mt-0.5 font-mono text-xs text-slate-500">created {{ shortTime(game.createdAtUtc) }}</p>
+              </div>
             </div>
             <div class="flex gap-2">
               @if (isMine(game)) {
-                <button (click)="cancel(game)"
-                        class="rounded-lg border border-surface-border px-3 py-2 text-sm text-slate-300 transition-colors hover:border-danger hover:text-red-400">
-                  Cancel
-                </button>
+                <button (click)="cancel(game)" [disabled]="busy()" class="btn-ghost danger">Cancel</button>
               } @else {
-                <button (click)="join(game)"
-                        [disabled]="busy()"
-                        class="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-primary-hover disabled:opacity-50">
-                  Join
-                </button>
+                <button (click)="join(game)" [disabled]="busy()" class="btn-cta">Join</button>
               }
             </div>
           </li>
@@ -89,15 +92,17 @@ import { GameDto } from '../../core/models';
 })
 export class LobbyPage implements OnInit, OnDestroy {
   private readonly api = inject(GamesApi);
-  private readonly hub = inject(SignalRService);
-  readonly connection = this.hub.state;
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly hub = inject(SignalRService);
 
   readonly games = signal<GameDto[]>([]);
   readonly loading = signal(false);
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
+  readonly connection = this.hub.state;
+
+  readonly emptyBoard = Array(9).fill(0);
 
   ngOnInit(): void {
     void this.load();
@@ -153,7 +158,7 @@ export class LobbyPage implements OnInit, OnDestroy {
       await this.api.join(game.id);
       await this.router.navigateByUrl(`/game/${game.id}`);
     } catch (error) {
-      // The classic V1 case: someone else joined first — the list refresh shows it as gone.
+      // The classic case: someone else joined first — the list refresh shows it as gone.
       this.error.set(problemMessage(error instanceof HttpErrorResponse ? error : null));
       await this.load();
     } finally {

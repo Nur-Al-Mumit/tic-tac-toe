@@ -7,24 +7,24 @@ import { AuthService } from '../core/auth.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink],
   template: `
-    <header class="border-b border-surface-border bg-surface/80 backdrop-blur">
-      <div class="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
-        <a routerLink="/lobby" class="flex items-center gap-2 font-bold">
-          <span class="font-mono text-mark-x">X</span>
-          <span class="text-slate-500">×</span>
-          <span class="font-mono text-mark-o">O</span>
-          <span class="ml-1 hidden text-sm text-slate-400 sm:inline">Tic-Tac-Toe Online</span>
+    <header class="sticky top-0 z-40 border-b border-white/5 bg-bg/70 backdrop-blur-md">
+      <div class="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
+        <a routerLink="/lobby" class="group flex items-center gap-2.5">
+          <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-sky-500 font-mono text-sm font-black text-white shadow-lg shadow-primary/30 transition-transform group-hover:scale-105">
+            X·O
+          </span>
+          <span class="hidden flex-col leading-none sm:flex">
+            <span class="text-sm font-extrabold tracking-tight">TIC·TAC·TOE</span>
+            <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">online arena</span>
+          </span>
         </a>
         @if (auth.user(); as user) {
           <div class="flex items-center gap-3">
-            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-sm font-bold text-primary">
+            <span class="flex h-9 w-9 items-center justify-center rounded-full border border-primary/40 bg-primary/15 font-mono text-sm font-bold text-primary">
               {{ user.username[0].toUpperCase() }}
             </span>
-            <span class="hidden text-sm text-slate-300 sm:inline">{{ user.username }}</span>
-            <button (click)="logout()"
-                    class="rounded-lg border border-surface-border px-3 py-1.5 text-sm text-slate-300 transition-colors hover:border-danger hover:text-red-400">
-              Log out
-            </button>
+            <span class="hidden text-sm font-semibold text-slate-200 sm:inline">{{ user.username }}</span>
+            <button (click)="logout()" class="btn-ghost danger !py-1.5">Log out</button>
           </div>
         }
       </div>

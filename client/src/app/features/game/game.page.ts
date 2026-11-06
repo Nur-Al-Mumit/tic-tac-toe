@@ -24,60 +24,71 @@ import { GameBoardComponent } from './game-board.component';
       }
 
       @if (game(); as game) {
-        <!-- player badges + turn indicator -->
-        <div class="mb-5 flex w-full items-center justify-between rounded-card border border-surface-border bg-surface px-4 py-3">
-          <div class="flex items-center gap-2"
+        <!-- player tiles + turn indicator -->
+        <div class="glass-card mb-5 flex w-full items-center justify-between gap-3 px-4 py-3">
+          <div class="flex items-center gap-3 rounded-xl px-2 py-1.5 transition-shadow"
                [class.animate-pulse-ring]="game.status === 'InProgress' && game.currentTurn === 'X'">
-            <span class="font-mono text-xl text-mark-x">X</span>
+            <span class="flex h-10 w-10 items-center justify-center rounded-xl border border-mark-x/40 bg-mark-x/10 font-mono text-lg font-black text-mark-x glow-x">
+              {{ game.playerX.username[0].toUpperCase() }}
+            </span>
             <div>
-              <p class="text-sm font-semibold">{{ game.playerX.username }}{{ isMe(game.playerX.id) ? ' (you)' : '' }}</p>
-              <p class="text-xs text-slate-500">{{ game.status === 'Waiting' ? 'waiting for opponent' : 'Player X' }}</p>
+              <p class="text-sm font-bold">{{ game.playerX.username }}{{ isMe(game.playerX.id) ? ' (you)' : '' }}</p>
+              <p class="text-xs text-slate-500">{{ game.status === 'Waiting' ? 'waiting for opponent…' : 'Player X' }}</p>
             </div>
           </div>
-          <span class="font-mono text-xs uppercase tracking-wider"
-                [class.text-success]="connection() === 'connected'"
-                [class.text-amber-400]="connection() === 'reconnecting'"
-                [class.text-slate-500]="connection() === 'disconnected'">
-            {{ connection() === 'connected' ? '● connected' : connection() === 'reconnecting' ? '● reconnecting…' : '● offline' }}
-          </span>
-          <div class="flex items-center gap-2"
+          <div class="flex flex-col items-center">
+            <span class="font-mono text-[10px] uppercase tracking-wider"
+                  [class.text-success]="connection() === 'connected'"
+                  [class.text-amber-400]="connection() === 'reconnecting'"
+                  [class.text-slate-500]="connection() === 'disconnected'">
+              {{ connection() === 'connected' ? '● live' : connection() === 'reconnecting' ? '● reconnecting' : '● offline' }}
+            </span>
+            <span class="mt-0.5 font-mono text-lg font-black text-slate-600">VS</span>
+          </div>
+          <div class="flex items-center gap-3 rounded-xl px-2 py-1.5 text-right transition-shadow"
                [class.animate-pulse-ring]="game.status === 'InProgress' && game.currentTurn === 'O'">
-            <div class="text-right">
-              <p class="text-sm font-semibold">
-                {{ game.playerO ? game.playerO.username + (isMe(game.playerO.id) ? ' (you)' : '') : '—' }}
+            <div>
+              <p class="text-sm font-bold">
+                {{ game.playerO ? game.playerO.username + (isMe(game.playerO.id) ? ' (you)' : '') : 'waiting…' }}
               </p>
               <p class="text-xs text-slate-500">Player O</p>
             </div>
-            <span class="font-mono text-xl text-mark-o">O</span>
+            <span class="flex h-10 w-10 items-center justify-center rounded-xl border font-mono text-lg font-black"
+                  [class.border-mark-o/40]="game.playerO" [class.bg-mark-o/10]="game.playerO"
+                  [class.text-mark-o]="game.playerO" [class.glow-o]="game.playerO"
+                  [class.border-surface-border]="!game.playerO" [class.text-slate-600]="!game.playerO">
+              {{ game.playerO ? game.playerO.username[0].toUpperCase() : '?' }}
+            </span>
           </div>
         </div>
 
         <!-- waiting state -->
         @if (game.status === 'Waiting') {
-          <div class="flex flex-col items-center gap-4 py-10">
-            <p class="text-slate-300">Waiting for an opponent<span class="animate-pulse">…</span></p>
-            <p class="text-xs text-slate-500">Share the lobby — anyone can join your open game.</p>
-            <button (click)="cancel()"
-                    class="rounded-lg border border-surface-border px-4 py-2 text-sm text-slate-300 transition-colors hover:border-danger hover:text-red-400">
-              Cancel game
-            </button>
+          <div class="glass-card flex w-full flex-col items-center gap-4 px-6 py-12">
+            <div class="grid grid-cols-3 gap-1.5" aria-hidden="true">
+              <span class="h-7 w-7 rounded-lg border border-surface-border bg-bg/60 animate-glow-breathe"></span>
+              <span class="h-7 w-7 rounded-lg border border-surface-border bg-bg/60"></span>
+              <span class="h-7 w-7 rounded-lg border border-surface-border bg-bg/60"></span>
+            </div>
+            <p class="text-lg font-bold text-slate-200">Waiting for an opponent<span class="animate-pulse">…</span></p>
+            <p class="text-xs text-slate-500">Your game is live in the lobby — anyone can join.</p>
+            <button (click)="cancel()" class="btn-ghost danger mt-1">Cancel game</button>
           </div>
         } @else {
           <ttt-game-board [game]="game" [myMark]="myMark()" [shake]="shake()" (placed)="place($event)" />
 
           @if (game.status === 'InProgress') {
-            <div class="mt-6 flex w-full items-center justify-between">
-              <p class="text-sm text-slate-300" aria-live="polite">
+            <div class="mt-5 flex w-full items-center justify-between">
+              <p class="text-sm font-semibold" aria-live="polite">
                 @if (game.currentTurn === myMark()) {
-                  Your turn — you are <span class="font-mono">{{ myMark() }}</span>
+                  <span class="mr-1.5 inline-block h-2 w-2 animate-pulse rounded-full bg-success align-middle"></span>
+                  Your turn — you are <span class="font-mono font-black {{ myMark() === 'X' ? 'text-mark-x' : 'text-mark-o' }}">{{ myMark() }}</span>
                 } @else {
-                  Opponent's turn
+                  <span class="mr-1.5 inline-block h-2 w-2 rounded-full bg-slate-600 align-middle"></span>
+                  Opponent's turn…
                 }
               </p>
-              <button (click)="leave()"
-                      class="rounded-lg border border-surface-border px-3 py-2 text-sm text-slate-300 transition-colors hover:border-danger hover:text-red-400">
-                Leave (forfeit)
-              </button>
+              <button (click)="leave()" class="btn-ghost danger">Leave (forfeit)</button>
             </div>
           }
         }
@@ -208,7 +219,7 @@ export class GamePage implements OnInit {
       return 'text-slate-300';
     }
     const iWon = (outcome === 'XWins' && this.myMark() === 'X') || (outcome === 'OWins' && this.myMark() === 'O');
-    return iWon ? 'text-success' : 'text-danger';
+    return iWon ? 'text-success drop-shadow-[0_0_14px_var(--color-success)]' : 'text-danger drop-shadow-[0_0_14px_var(--color-danger)]';
   }
 
   private apply(game: unknown): void {

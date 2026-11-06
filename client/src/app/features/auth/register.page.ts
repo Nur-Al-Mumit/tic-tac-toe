@@ -11,8 +11,8 @@ import { problemMessage } from '../../core/problem';
   imports: [ReactiveFormsModule, RouterLink],
   template: `
     <main class="flex min-h-screen items-center justify-center p-6">
-      <section class="animate-fade-in w-full max-w-md rounded-card border border-surface-border bg-surface p-8 shadow-xl">
-        <h1 class="text-xl font-bold">Create your account</h1>
+      <section class="glass-card animate-fade-in w-full max-w-md p-8 sm:p-10">
+        <h1 class="text-xl font-extrabold tracking-tight">Create your account</h1>
         <p class="mt-1 text-sm text-slate-400">Sign up in seconds — no email verification needed.</p>
 
         @if (serverError(); as error) {
@@ -23,27 +23,27 @@ import { problemMessage } from '../../core/problem';
 
         <form [formGroup]="form" (ngSubmit)="submit()" class="mt-6 space-y-4" novalidate>
           <div>
-            <label for="username" class="mb-1 block text-sm font-medium text-slate-300">Username</label>
+            <label for="username" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-400">Username</label>
             <input id="username" formControlName="username" autocomplete="username" required
-                   class="w-full rounded-lg border border-surface-border bg-bg px-3 py-2 text-sm outline-none transition-colors focus:border-primary"
+                   class="field-input"
                    [class.border-danger]="showError(username)" />
             @if (showError(username); as message) { <p class="mt-1 text-xs text-red-400">{{ message }}</p> }
           </div>
 
           <div>
-            <label for="email" class="mb-1 block text-sm font-medium text-slate-300">Email</label>
+            <label for="email" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-400">Email</label>
             <input id="email" formControlName="email" autocomplete="email" required
-                   class="w-full rounded-lg border border-surface-border bg-bg px-3 py-2 text-sm outline-none transition-colors focus:border-primary"
+                   class="field-input"
                    [class.border-danger]="showError(email)" />
             @if (showError(email); as message) { <p class="mt-1 text-xs text-red-400">{{ message }}</p> }
           </div>
 
           <div>
-            <label for="password" class="mb-1 block text-sm font-medium text-slate-300">Password</label>
+            <label for="password" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-400">Password</label>
             <div class="relative">
               <input id="password" formControlName="password" autocomplete="new-password" required
                      [type]="showPassword() ? 'text' : 'password'"
-                     class="w-full rounded-lg border border-surface-border bg-bg px-3 py-2 pr-14 text-sm outline-none transition-colors focus:border-primary"
+                     class="field-input pr-16"
                      [class.border-danger]="showError(password)" />
               <button type="button" (click)="showPassword.set(!showPassword())"
                       class="absolute inset-y-0 right-2 my-auto h-7 rounded px-2 text-xs text-slate-400 hover:text-slate-200">
@@ -59,11 +59,10 @@ import { problemMessage } from '../../core/problem';
           </div>
 
           <div>
-            <label for="confirm" class="mb-1 block text-sm font-medium text-slate-300">Confirm password</label>
+            <label for="confirm" class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-400">Confirm password</label>
             <input id="confirm" formControlName="confirm" autocomplete="new-password" required
                    type="password"
-                   class="w-full rounded-lg border border-surface-border bg-bg px-3 py-2 text-sm outline-none transition-colors focus:border-primary"
-                   [class.border-danger]="submitted() && confirm.invalid" />
+                   class="field-input" [class.is-invalid]="submitted() && confirm.invalid" />
             @if (submitted() && confirm.errors?.['required']) {
               <p class="mt-1 text-xs text-red-400">Please confirm the password.</p>
             } @else if (submitted() && form.errors?.['passwordMismatch']) {
@@ -71,15 +70,14 @@ import { problemMessage } from '../../core/problem';
             }
           </div>
 
-          <button type="submit" [disabled]="busy()"
-                  class="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-slate-950 transition-colors hover:bg-primary-hover disabled:opacity-50">
-            @if (busy()) { <span class="inline-block animate-pulse">Creating…</span> } @else { Create account }
+          <button type="submit" [disabled]="busy()" class="btn-cta w-full !py-3">
+            @if (busy()) { Creating… } @else { Start playing }
           </button>
         </form>
 
         <p class="mt-6 text-center text-sm text-slate-400">
           Already registered?
-          <a routerLink="/login" class="font-semibold text-primary hover:underline">Log in</a>
+          <a routerLink="/login" class="font-bold text-primary-hover hover:underline">Log in</a>
         </p>
       </section>
     </main>
