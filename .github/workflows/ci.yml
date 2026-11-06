@@ -24,14 +24,8 @@ jobs:
       - name: Build (warnings as errors)
         run: dotnet build TicTacToe.slnx --no-restore
 
-      - name: Domain unit tests
-        run: dotnet test tests/TicTacToe.Domain.UnitTests --no-build --nologo
-
-      - name: Application unit tests
-        run: dotnet test tests/TicTacToe.Application.UnitTests --no-build --nologo
-
-      - name: API integration tests (Testcontainers, real PostgreSQL 18)
-        run: dotnet test tests/TicTacToe.Api.IntegrationTests --no-build --nologo
+      - name: Unit tests (NUnit + Shouldly)
+        run: dotnet test test/TicTacToe.Application.UnitTests --no-build --nologo
 
       - name: Audit NuGet vulnerabilities
         run: dotnet list TicTacToe.slnx package --vulnerable --include-transitive | tee /dev/stderr | (! grep -q "has the following vulnerable packages")

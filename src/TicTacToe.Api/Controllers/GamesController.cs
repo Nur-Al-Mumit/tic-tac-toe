@@ -2,10 +2,10 @@ using Cortex.Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TicTacToe.Api.Common;
-using TicTacToe.Application.Common.Interfaces;
-using TicTacToe.Application.Games.Commands;
-using TicTacToe.Application.Games.Dtos;
-using TicTacToe.Application.Games.Queries;
+using TicTacToe.Application.Contracts.Services;
+using TicTacToe.Application.Features.Games.Command;
+using TicTacToe.Application.Features.Games.Dtos;
+using TicTacToe.Application.Features.Games.Query;
 
 namespace TicTacToe.Api.Controllers;
 
@@ -18,13 +18,13 @@ public sealed class GamesController(IMediator mediator, ICurrentUser currentUser
     [HttpPost]
     [ProducesResponseType<GameDto>(StatusCodes.Status201Created)]
     public async Task<IActionResult> Create(CancellationToken cancellationToken)
-        => this.FromResult(await mediator.SendAsync(new CreateGameCommand(), cancellationToken), StatusCodes.Status201Created);
+        => this.FromResult(await mediator.SendAsync(new GameCreateCommand(), cancellationToken), StatusCodes.Status201Created);
 
     /// <summary>Lobby list; ?status=waiting|inprogress (200).</summary>
     [HttpGet]
     [ProducesResponseType<IReadOnlyList<LobbyGameDto>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> List([FromQuery] string? status, CancellationToken cancellationToken)
-        => this.FromResult(await mediator.QueryAsync(new GetLobbyGamesQuery(status), cancellationToken));
+        => this.FromResult(await mediator.QueryAsync(new GetAllGamesQuery(status), cancellationToken));
 
     /// <summary>Game detail with derived board (200/404).</summary>
     [HttpGet("{id:guid}")]
@@ -46,26 +46,26 @@ public sealed class GamesController(IMediator mediator, ICurrentUser currentUser
     [HttpPost("{id:guid}/join")]
     [ProducesResponseType<GameDto>(StatusCodes.Status200OK)]
     public async Task<IActionResult> Join(Guid id, CancellationToken cancellationToken)
-        => this.FromResult(await mediator.SendAsync(new JoinGameCommand(id), cancellationToken));
+        => this.FromResult(await mediator.SendAsync(new GameJoinCommand(id), cancellationToken));
 
     /// <summary>Place a mark (200). 409 not your turn / 422 invalid position or occupied cell.</summary>
     [HttpPost("{id:guid}/moves")]
     [ProducesResponseType<GameDto>(StatusCodes.Status200OK)]
     public async Task<IActionResult> Move(Guid id, MoveGameRequest request, CancellationToken cancellationToken)
-        => this.FromResult(await mediator.SendAsync(new MakeGameMoveCommand(id, request.Position), cancellationToken));
+        => this.FromResult(await mediator.SendAsync(new GameMoveCommand(id, request.Position), cancellationToken));
 
     /// <summary>Host cancels a waiting game (204).</summary>
     [HttpPost("{id:guid}/cancel")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Cancel(Guid id, CancellationToken cancellationToken)
-        => this.FromResult(await mediator.SendAsync(new CancelGameCommand(id), cancellationToken));
+        => this.FromResult(await mediator.SendAsync(new GameCancelCommand(id), cancellationToken));
 
     /// <summary>Leave / forfeit — the leaver loses (204).</summary>
     [HttpPost("{id:guid}/leave")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Leave(Guid id, CancellationToken cancellationToken)
         => this.FromResult(await mediator.SendAsync(
-            new ForfeitGameCommand(id, currentUser.UserId ?? Guid.Empty), cancellationToken));
+            new GameLeaveCommand(id, currentUser.UserId ?? Guid.Empty), cancellationToken));
 }
 
 public sealed record MoveGameRequest(int Position);

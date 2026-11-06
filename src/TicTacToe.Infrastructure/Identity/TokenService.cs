@@ -5,15 +5,15 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using TicTacToe.Application.Auth.Dtos;
-using TicTacToe.Application.Common.Interfaces;
+using TicTacToe.Application.Features.Auth.Dtos;
+using TicTacToe.Application.Contracts.Services;
 using TicTacToe.Application.Common.Results;
-using TicTacToe.Infrastructure.Persistence;
+using TicTacToe.Infrastructure.Data;
 
 namespace TicTacToe.Infrastructure.Identity;
 
 /// <summary>15-minute JWTs; 7-day refresh tokens, hashed at rest, rotated on every use with family revocation on reuse.</summary>
-public class TokenService(AppDbContext context, IDateTimeProvider dateTimeProvider, IConfiguration configuration) : ITokenService
+public class TokenService(ApplicationDbContext context, IDateTimeProvider dateTimeProvider, IConfiguration configuration) : ITokenService
 {
     private readonly string _issuer = configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("Jwt:Issuer is not configured.");
     private readonly string _audience = configuration["Jwt:Audience"] ?? throw new InvalidOperationException("Jwt:Audience is not configured.");

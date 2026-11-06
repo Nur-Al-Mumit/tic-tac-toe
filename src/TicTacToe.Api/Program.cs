@@ -5,11 +5,12 @@ using TicTacToe.Api.Middleware;
 using TicTacToe.Api.Hubs;
 using TicTacToe.Api.Realtime;
 using TicTacToe.Api.Services;
-using TicTacToe.Application.Common.Interfaces;
+using TicTacToe.Application.Contracts.Services;
 using Microsoft.EntityFrameworkCore;
-using TicTacToe.Infrastructure.Persistence;
+using TicTacToe.Infrastructure.Data;
 using TicTacToe.Application;
 using TicTacToe.Infrastructure;
+using TicTacToe.Infrastructure.Extensions;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -27,7 +28,7 @@ try
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
     builder.Services.AddHealthChecks()
-        .AddDbContextCheck<AppDbContext>("database", tags: ["ready"]);
+        .AddDbContextCheck<ApplicationDbContext>("database", tags: ["ready"]);
     builder.Services.AddHttpContextAccessor();
     builder.Services.AddScoped<IGameNotifier, SignalRGameNotifier>();
     builder.Services.AddSignalR();
@@ -58,7 +59,7 @@ try
     if (app.Environment.IsDevelopment())
     {
         using var scope = app.Services.CreateScope();
-        await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
+        await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.MigrateAsync();
     }
 
     app.MapControllers();

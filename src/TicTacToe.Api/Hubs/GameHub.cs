@@ -1,9 +1,9 @@
 using Cortex.Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using TicTacToe.Application.Common.Interfaces;
-using TicTacToe.Application.Games.Dtos;
-using TicTacToe.Application.Games.Queries;
+using TicTacToe.Application.Contracts.Services;
+using TicTacToe.Application.Features.Games.Dtos;
+using TicTacToe.Application.Features.Games.Query;
 
 namespace TicTacToe.Api.Hubs;
 

@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using TicTacToe.Application.Common.Interfaces;
+using TicTacToe.Application.Contracts.Services;
 
 namespace TicTacToe.Api.Services;
 

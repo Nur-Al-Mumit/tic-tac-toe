@@ -2,7 +2,7 @@ using Cortex.Mediator.Behaviors.FluentValidation.DependencyInjection;
 using Cortex.Mediator.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
 using TicTacToe.Application.Common.Behaviors;
-using TicTacToe.Application.Games;
+using TicTacToe.Application.Features.Games;
 
 namespace TicTacToe.Application;
 

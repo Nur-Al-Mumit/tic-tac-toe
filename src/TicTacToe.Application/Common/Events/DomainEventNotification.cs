@@ -1,5 +1,5 @@
 using Cortex.Mediator.Notifications;
-using TicTacToe.Domain.Common;
+using TicTacToe.Domain.Contracts;
 
 namespace TicTacToe.Application.Common.Events;
 

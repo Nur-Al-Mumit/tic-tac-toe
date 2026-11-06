@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using TicTacToe.Api.Hubs;
-using TicTacToe.Application.Common.Interfaces;
-using TicTacToe.Application.Games.Dtos;
+using TicTacToe.Application.Contracts.Services;
+using TicTacToe.Application.Features.Games.Dtos;
 
 namespace TicTacToe.Api.Realtime;
 

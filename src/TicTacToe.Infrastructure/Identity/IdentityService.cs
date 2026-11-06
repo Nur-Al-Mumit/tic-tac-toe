@@ -1,10 +1,11 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using TicTacToe.Application.Auth.Dtos;
-using TicTacToe.Application.Common.Interfaces;
+using TicTacToe.Application.Features.Auth.Dtos;
+using TicTacToe.Application.Contracts.Repositories;
+using TicTacToe.Application.Contracts.Services;
 using TicTacToe.Application.Common.Results;
-using TicTacToe.Domain.Players;
-using TicTacToe.Infrastructure.Persistence;
+using TicTacToe.Domain.Entities;
+using TicTacToe.Infrastructure.Data;
 
 namespace TicTacToe.Infrastructure.Identity;
 
@@ -12,7 +13,7 @@ public class IdentityService(
     UserManager<ApplicationUser> userManager,
     IPlayerProfileRepository profileRepository,
     IDateTimeProvider dateTimeProvider,
-    AppDbContext context) : IIdentityService
+    ApplicationDbContext context) : IIdentityService
 {
     public async Task<Result<UserDto>> RegisterAsync(string username, string email, string password, CancellationToken cancellationToken)
     {
