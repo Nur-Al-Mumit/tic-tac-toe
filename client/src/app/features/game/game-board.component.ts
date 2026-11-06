@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { GameDto } from '../../core/models';
 
 /**
@@ -9,11 +9,12 @@ import { GameDto } from '../../core/models';
   selector: 'ttt-game-board',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div role="grid" aria-label="Tic-tac-toe board"
+    <div role="grid" aria-label="Tic-tac-toe board" (keydown)="onKeydown($event, focusedCell())"
          class="grid grid-cols-3 gap-2.5 rounded-2xl border border-white/5 bg-white/[0.02] p-2.5 shadow-[0_0_60px_-18px_var(--color-primary)]"
          [class.animate-shake]="shake()">
       @for (cell of cells(); track $index) {
-        <button role="gridcell"
+        <button role="gridcell" [id]="'cell-' + $index"
+                [attr.tabindex]="$index === focusedCell() ? 0 : -1"
                 [attr.aria-label]="ariaLabel($index)"
                 [disabled]="!cell.playable"
                 (click)="cell.playable && placed.emit($index)"
@@ -58,10 +59,34 @@ import { GameDto } from '../../core/models';
   `,
 })
 export class GameBoardComponent {
+  private static readonly RowOf = (index: number) => Math.floor(index / 3);
+  private static readonly ColumnOf = (index: number) => index % 3;
+
   readonly game = input.required<GameDto>();
   readonly myMark = input<'X' | 'O' | null>(null);
   readonly placed = output<number>();
   readonly shake = input(false);
+
+  /** Roving tabindex: exactly one stop inside the grid, moved with arrow keys (pages-and-flows §10.3). */
+  readonly focusedCell = signal(0);
+
+  moveFocus(delta: number): void {
+    const next = Math.min(8, Math.max(0, this.focusedCell() + delta));
+    this.focusedCell.set(next);
+    document.getElementById(`cell-${next}`)?.focus();
+  }
+
+  onKeydown(event: KeyboardEvent, index: number): void {
+    this.focusedCell.set(index);
+    switch (event.key) {
+      case 'ArrowRight': this.moveFocus(1); break;
+      case 'ArrowLeft': this.moveFocus(-1); break;
+      case 'ArrowDown': this.moveFocus(3); break;
+      case 'ArrowUp': this.moveFocus(-3); break;
+      default: return;
+    }
+    event.preventDefault();
+  }
 
   readonly winningLine = computed(() => this.game().result?.winningLine ?? null);
 

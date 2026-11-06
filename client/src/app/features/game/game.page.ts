@@ -17,6 +17,7 @@ import { DemoBoardComponent } from '../../shared/demo-board.component';
   imports: [NavbarComponent, GameBoardComponent, DemoBoardComponent],
   template: `
     <ttt-navbar />
+    <span class="sr-only" role="status" aria-live="polite">{{ announcement() }}</span>
     <main class="mx-auto flex max-w-lg flex-col items-center px-4 py-8">
       @if (error(); as message) {
         <p role="alert" class="mb-4 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-red-400">
@@ -259,6 +260,19 @@ export class GamePage implements OnInit, OnDestroy {
   backToLobby(): void {
     void this.router.navigateByUrl('/lobby');
   }
+
+  /** Screen-reader announcements (§10.3): turn changes and results in words. */
+  readonly announcement = computed(() => {
+    const game = this.game();
+    if (!game) return '';
+    if (game.status === 'Finished') {
+      return game.result?.outcome === 'Draw' ? 'Draw.' : this.headline(game) + '.';
+    }
+    if (game.status === 'InProgress') {
+      return game.currentTurn === this.myMark() ? 'Your turn.' : "Opponent's turn.";
+    }
+    return '';
+  });
 
   clockLabel(): string {
     const s = this.secondsLeft();
