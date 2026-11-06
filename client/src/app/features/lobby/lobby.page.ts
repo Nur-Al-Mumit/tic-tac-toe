@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { NavbarComponent } from '../../shared/navbar.component';
 import { AuthService } from '../../core/auth.service';
 import { GamesApi } from '../../core/games.api';
@@ -12,7 +12,7 @@ import { GameDto } from '../../core/models';
 @Component({
   selector: 'ttt-lobby-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NavbarComponent],
+  imports: [NavbarComponent, RouterLink],
   template: `
     <ttt-navbar />
     <main class="mx-auto max-w-3xl px-4 py-8">
@@ -33,6 +33,22 @@ import { GameDto } from '../../core/models';
           </button>
         </div>
       </div>
+
+      @if (activeGame(); as active) {
+        <a [routerLink]="['/game', active.id]"
+           class="glass-card mb-4 flex items-center justify-between border-primary/40 p-4 transition-colors hover:border-primary">
+          <div class="flex items-center gap-3">
+            <span class="animate-pulse inline-block h-2.5 w-2.5 rounded-full bg-success"></span>
+            <div>
+              <p class="text-sm font-bold">
+                You're in an active game vs {{ active.playerO ? (active.playerX.id === auth.user()?.id ? active.playerO.username : active.playerX.username) : '— waiting for an opponent' }}
+              </p>
+              <p class="text-xs text-slate-400">It keeps running while you're away — jump back in, even from another device.</p>
+            </div>
+          </div>
+          <span class="btn-cta">Return to game</span>
+        </a>
+      }
 
       @if (error(); as message) {
         <p role="alert" class="mt-4 rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-red-400">
@@ -97,6 +113,7 @@ export class LobbyPage implements OnInit, OnDestroy {
   private readonly hub = inject(SignalRService);
 
   readonly games = signal<GameDto[]>([]);
+  readonly activeGame = signal<GameDto | null>(null);
   readonly loading = signal(false);
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
@@ -106,6 +123,7 @@ export class LobbyPage implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     void this.load();
+    void this.api.active().then((g) => this.activeGame.set(g)).catch(() => this.activeGame.set(null));
     // Live lobby: new waiting games appear, joined/cancelled games disappear — no refresh (US-05).
     void this.hub.connect({
       onGameCreated: (game) => this.addGame(game as GameDto),

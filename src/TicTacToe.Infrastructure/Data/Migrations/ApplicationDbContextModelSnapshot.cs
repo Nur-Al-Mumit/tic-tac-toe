@@ -234,7 +234,7 @@ namespace TicTacToe.Infrastructure.Data.Migrations
 
                     b.HasIndex("MoveDeadlineUtc")
                         .HasDatabaseName("ix_games_move_deadline_active")
-                        .HasFilter("status = 1");
+                        .HasFilter("status IN (0, 1)");
 
                     b.HasIndex("PlayerOId")
                         .IsUnique()

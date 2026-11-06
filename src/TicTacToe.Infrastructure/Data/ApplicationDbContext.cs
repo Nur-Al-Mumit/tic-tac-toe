@@ -66,7 +66,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             // Timeout sweeper lookup: InProgress games with an expired move clock.
             entity.HasIndex(g => g.MoveDeadlineUtc)
                 .HasDatabaseName("ix_games_move_deadline_active")
-                .HasFilter("status = 1");
+                .HasFilter("status IN (0, 1)");
 
             // xmin as the optimistic concurrency token (ADR-0006). Npgsql maps a uint rowversion
             // property to the real PostgreSQL xmin system column and reads it back after each save.

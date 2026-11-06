@@ -70,7 +70,7 @@ public class GameCommandHandlerTests
         ctx.Games.GetActiveGameForPlayerAsync(Ids.Host, Arg.Any<CancellationToken>())
             .Returns(Game.Create(Ids.Host, Now));
 
-        var result = await new GameCreateCommandHandler(ctx.UnitOfWork, ctx.CurrentUser, ctx.Time, ctx.Loader)
+        var result = await new GameCreateCommandHandler(ctx.UnitOfWork, ctx.CurrentUser, ctx.Time, ctx.Loader, ctx.Rules)
             .Handle(new GameCreateCommand(), CancellationToken.None);
 
         result.Error!.Code.ShouldBe("Games.Busy");
@@ -84,7 +84,7 @@ public class GameCommandHandlerTests
         ctx.CurrentUser.UserId.Returns(Ids.Host);
         ctx.Games.GetActiveGameForPlayerAsync(Ids.Host, Arg.Any<CancellationToken>()).Returns((Game?)null);
 
-        var result = await new GameCreateCommandHandler(ctx.UnitOfWork, ctx.CurrentUser, ctx.Time, ctx.Loader)
+        var result = await new GameCreateCommandHandler(ctx.UnitOfWork, ctx.CurrentUser, ctx.Time, ctx.Loader, ctx.Rules)
             .Handle(new GameCreateCommand(), CancellationToken.None);
 
         result.IsSuccess.ShouldBeTrue();
@@ -197,6 +197,38 @@ public class GameCommandHandlerTests
             .Handle(new GameCancelCommand(game.Id), CancellationToken.None);
 
         result.Error!.Code.ShouldBe("Games.NotHost");
+    }
+
+    [Test]
+    public async Task GameWaitingExpired_NobodyJoined_CancelsAndFreesHost()
+    {
+        var ctx = New();
+        var game = Game.Create(Ids.Host, Now, TimeSpan.FromSeconds(10)); // waiting clock
+        ctx.Games.GetGameByIdAsync(game.Id, Arg.Any<CancellationToken>()).Returns(game);
+        ctx.Time.UtcNow.Returns(Now.AddSeconds(11));
+
+        var result = await new GameWaitingExpiredCommandHandler(ctx.UnitOfWork, ctx.Time)
+            .Handle(new GameWaitingExpiredCommand(game.Id), CancellationToken.None);
+
+        result.IsSuccess.ShouldBeTrue();
+        game.Status.ShouldBe(GameStatus.Cancelled);
+        game.MoveDeadlineUtc.ShouldBeNull();
+        game.DomainEvents.OfType<GameCancelled>().Single().HostPlayerId.ShouldBe(Ids.Host);
+    }
+
+    [Test]
+    public async Task GameWaitingExpired_StillWithinWindow_IsNoOp()
+    {
+        var ctx = New();
+        var game = Game.Create(Ids.Host, Now, TimeSpan.FromSeconds(6000));
+        ctx.Games.GetGameByIdAsync(game.Id, Arg.Any<CancellationToken>()).Returns(game);
+
+        var result = await new GameWaitingExpiredCommandHandler(ctx.UnitOfWork, ctx.Time)
+            .Handle(new GameWaitingExpiredCommand(game.Id), CancellationToken.None);
+
+        result.IsSuccess.ShouldBeTrue();
+        game.Status.ShouldBe(GameStatus.Waiting);
+        await ctx.UnitOfWork.DidNotReceive().SaveAsync();
     }
 
     [Test]

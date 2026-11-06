@@ -6,6 +6,7 @@ using TicTacToe.Application.Common;
 using TicTacToe.Application.Contracts;
 using TicTacToe.Application.Contracts.Repositories;
 using TicTacToe.Application.Features.Games.Command;
+using TicTacToe.Domain.Entities.GameAggregate;
 using TicTacToe.Application.Contracts.Services;
 
 namespace TicTacToe.Infrastructure.Hosting;
@@ -48,10 +49,15 @@ public sealed class GameTimeoutService(
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
         var dateTimeProvider = scope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
 
-        var timedOut = await unitOfWork.GameRepository.GetTimedOutGamesAsync(dateTimeProvider.UtcNow, cancellationToken);
-        foreach (var game in timedOut)
+        var expired = await unitOfWork.GameRepository.GetTimedOutGamesAsync(dateTimeProvider.UtcNow, cancellationToken);
+        foreach (var game in expired)
         {
-            if (game.PlayerIdOfTurn is { } playerId)
+            if (game.Status == GameStatus.Waiting)
+            {
+                logger.LogInformation("Expiring waiting game {GameId} (nobody joined in time)", game.Id);
+                await mediator.SendCommandAsync(new GameWaitingExpiredCommand(game.Id), cancellationToken);
+            }
+            else if (game.PlayerIdOfTurn is { } playerId)
             {
                 logger.LogInformation("Timing out game {GameId} (player {PlayerId})", game.Id, playerId);
                 await mediator.SendCommandAsync(new GameTimeoutCommand(game.Id, playerId), cancellationToken);

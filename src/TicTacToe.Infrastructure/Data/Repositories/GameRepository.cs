@@ -22,7 +22,7 @@ public class GameRepository(ApplicationDbContext context) : Repository<Game, Gui
 
     public async Task<IReadOnlyList<Game>> GetTimedOutGamesAsync(DateTime utcNow, CancellationToken cancellationToken)
         => await context.Games
-            .Where(g => g.Status == GameStatus.InProgress && g.MoveDeadlineUtc != null && g.MoveDeadlineUtc <= utcNow)
+            .Where(g => (g.Status == GameStatus.Waiting || g.Status == GameStatus.InProgress) && g.MoveDeadlineUtc != null && g.MoveDeadlineUtc <= utcNow)
             .ToListAsync(cancellationToken);
 
     public void Detach(Game game)

@@ -61,8 +61,10 @@ public class Game : IAggregateRoot<Guid>, IHasDomainEvents
 
     public void ClearDomainEvents() => _domainEvents.Clear();
 
-    /// <summary>Host creates a game and is Player X; X always moves first (FR-05, FR-08).</summary>
-    public static Game Create(Guid hostPlayerId, DateTime utcNow)
+    /// <summary>Host creates a game and is Player X; X always moves first (FR-05, FR-08).
+    /// waitingTimeout starts the waiting clock: if nobody joins in time, the game auto-cancels
+    /// (see ExpireWaiting) so an abandoned host is never blocked from playing again.</summary>
+    public static Game Create(Guid hostPlayerId, DateTime utcNow, TimeSpan? waitingTimeout = null)
     {
         if (hostPlayerId == Guid.Empty)
         {
@@ -70,6 +72,7 @@ public class Game : IAggregateRoot<Guid>, IHasDomainEvents
         }
 
         var game = new Game(hostPlayerId, utcNow);
+        game.MoveDeadlineUtc = waitingTimeout is { } timeout ? utcNow.Add(timeout) : null;
         game._domainEvents.Add(new GameCreated(game.Id, hostPlayerId, utcNow));
         return game;
     }
@@ -158,6 +161,25 @@ public class Game : IAggregateRoot<Guid>, IHasDomainEvents
 
         var loser = MarkOf(playerId);
         Finish(loser == Mark.X ? GameOutcome.OWins : GameOutcome.XWins, FinishReason.Timeout, null, utcNow);
+    }
+
+    /// <summary>Nobody joined before the waiting clock ran out: the game cancels and the host is freed.</summary>
+    public void ExpireWaiting(DateTime utcNow)
+    {
+        if (Status != GameStatus.Waiting)
+        {
+            throw new GameNotInProgressException();
+        }
+
+        if (MoveDeadlineUtc is not { } deadline || deadline > utcNow)
+        {
+            throw new GameNotInProgressException(); // still within the waiting window
+        }
+
+        Status = GameStatus.Cancelled;
+        MoveDeadlineUtc = null;
+        FinishedAtUtc = utcNow;
+        _domainEvents.Add(new GameCancelled(Id, PlayerXId, utcNow));
     }
 
     /// <summary>The leaver loses; the opponent wins with reason Forfeit (manual form).</summary>
