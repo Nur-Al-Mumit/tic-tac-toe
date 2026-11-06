@@ -34,14 +34,14 @@ Each item is fully specified today and *not built* in V1:
 
 | Deferred feature | Spec lives in | Why it can wait |
 | --- | --- | --- |
-| Presence: `PresenceTracker`, online count, online players list, `PresenceChanged`, `GetOnlinePlayersQuery`, US-04 | [realtime-signalr](../02-backend/realtime-signalr.md) §presence | The game is live without knowing who else is online |
+| Presence — **shipped 2026-11-06**: in-memory `PresenceTracker`, `PresenceChanged` broadcasts, `GET /players/online`, Online Players panel with Available/In game (US-04 done). Multi-instance presence still needs Redis | [realtime-signalr](../02-backend/realtime-signalr.md) | Redis backplane remains a scale-out concern |
 | Live lobby updates — **shipped 2026-11-06**: `lobby` group with `GameCreated`/`GameRemoved` broadcasts (list updates itself; US-05 live part done). Still later: `GameUpdated` status changes, animated list transitions, presence-driven list | [realtime-signalr](../02-backend/realtime-signalr.md) | Presence remains the open piece |
 | Disconnect grace & auto-forfeit — **shipped 2026-11-06 as the move clock**: 60-second per-move deadline, `GameTimeoutService` sweeper, loss by **Timeout** (a disconnected player simply runs out of time; US-10 done). Later: `OpponentConnection` presence events + grace-countdown UI | [realtime-signalr](../02-backend/realtime-signalr.md) | The countdown badge and Timeout result already cover the core case |
 | Stale-Waiting sweep — **shipped 2026-11-06 as the waiting clock**: no join within `GameRules:WaitingTimeoutSeconds` (default 120 s) → game auto-cancels and the host is freed (sweeper-driven `GameWaitingExpiredCommand`) | [realtime-signalr](../02-backend/realtime-signalr.md) | — |
 | Sophisticated reconnect/resync policy (queue-aware resync, grace countdown UI) | [realtime-signalr](../02-backend/realtime-signalr.md), [angular-architecture](../04-frontend/angular-architecture.md) | Basic reload-and-rejoin covers page refresh |
-| Lobby UI completeness: Open/In-Progress tabs, Online Players panel, avatar menu, empty-state illustrations, stagger/skeleton animations | [pages-and-flows](../04-frontend/pages-and-flows.md) | Minimal list is sufficient to find/join a game |
+| Lobby completeness — **shipped 2026-11-06**: Open/In-Progress tabs with live tab moves (`GameUpdated`), Online Players panel, Resume button, stagger animations. Still later: skeleton loaders, empty-state illustrations | [pages-and-flows](../04-frontend/pages-and-flows.md) | — |
 | Game UI polish beyond core: confetti burst, waiting-dots animation, hover previews beyond the specced basics | [animations](../04-frontend/animations.md) | Core draw/win-line animations already carry the feel |
-| M6 hardening: rate limiting, security headers middleware, Playwright E2E suite, accessibility audit, load sanity | [security](../05-quality/security.md), [testing-strategy](../05-quality/testing-strategy.md) | Follows the feature work, as in the roadmap |
+| M6 hardening — **shipped 2026-11-06**: rate limiting (auth 10/min/IP, moves 5/s/user), security headers middleware, board keyboard navigation + live regions. E2E suite and load test remain post-V1 | [security](../05-quality/security.md), [testing-strategy](../05-quality/testing-strategy.md) | Playwright/load harnesses are the open piece |
 
 ## 4. User Story Mapping
 
