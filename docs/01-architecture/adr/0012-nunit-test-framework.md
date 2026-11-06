@@ -2,7 +2,7 @@
 
 | Status | Accepted — 2026-11-04 |
 | --- | --- |
-| Amendment | Assertion library detail superseded by [ADR-0014](0014-shouldly-assertions.md) — assertions are **Shouldly**; the NUnit decision stands |
+| Amendment | Assertions: superseded by [ADR-0014](0014-shouldly-assertions.md). Test scope and layout: superseded by [ADR-0015](0015-vertical-slice-structure-and-unit-only-tests.md) — one `Application.UnitTests` project, no integration project |
 | Scope | .NET test framework and the supporting test libraries |
 
 ## Context

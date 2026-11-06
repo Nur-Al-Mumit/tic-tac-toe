@@ -109,7 +109,7 @@ sequenceDiagram
     participant DB as PostgreSQL
 
     Note over Sweep: X lost all connections 30 s ago
-    Sweep->>FH: Forfeit(X) via ForfeitGameCommand
+    Sweep->>FH: Forfeit(X) via GameLeaveCommand
     O->>MH: POST /games/{id}/moves { position: 4 }
     FH->>DB: SELECT game (xmin = 2005, InProgress)
     MH->>DB: SELECT game (xmin = 2005, InProgress)
@@ -162,7 +162,7 @@ The PRD's reliability NFR names optimistic concurrency on game updates explicitl
 
 `DisconnectGraceService` (Infrastructure, `IHostedService`) is a *third writer* that races with player commands, and it goes through exactly the same pipeline:
 
-- **30 s forfeit timers:** when a player in an InProgress game loses their last SignalR connection, a timer starts; a reconnect cancels it; on expiry the service dispatches `ForfeitGameCommand` through the Cortex.Mediator command pipeline — same validation, same `UnitOfWorkBehavior`, same `xmin` guard (diagram 4.2).
+- **30 s forfeit timers:** when a player in an InProgress game loses their last SignalR connection, a timer starts; a reconnect cancels it; on expiry the service dispatches `GameLeaveCommand` through the Cortex.Mediator command pipeline — same validation, same `UnitOfWorkBehavior`, same `xmin` guard (diagram 4.2).
 - **Stale-lobby sweep:** Waiting games older than 15 minutes are cancelled via `CancelGameCommand` on the same path.
 - **Sweep vs join:** a joiner and the stale-sweep both load a Waiting game; whoever saves first wins. The loser reloads once: the joiner sees `Cancelled` → "game no longer available"; the sweep sees `InProgress` → the game is no longer stale, no-op.
 - Because every timer executes a command rather than touching the DbContext directly, no special concurrency code exists outside the pattern in [section 3](#3-the-pattern-load--domain-method--save--reload-once--re-evaluate).
@@ -180,6 +180,6 @@ The join race, forfeit-vs-move race and stale-sweep race are reproduced by paral
 
 - Reload-once policy: a second consecutive `DbUpdateConcurrencyException` after the reload returns a retryable error rather than looping.
 - `UnitOfWorkBehavior` is the only commit point and dispatches domain events only after a successful `SaveChangesAsync`.
-- `DisconnectGraceService` issues `ForfeitGameCommand` / `CancelGameCommand` through the Cortex.Mediator command pipeline (so all sweep mutations are xmin-guarded like any user command).
+- `DisconnectGraceService` issues `GameLeaveCommand` / `CancelGameCommand` through the Cortex.Mediator command pipeline (so all sweep mutations are xmin-guarded like any user command).
 - `Version` (`uint`) on `Game` exists solely for EF/Npgsql concurrency mapping and carries no domain meaning; only equality is ever used.
 - PostgreSQL SQLSTATE `23505` unique violations are translated to domain `Result` errors in Application, not rethrown as 500s.

@@ -60,7 +60,7 @@ Browse the app at `http://localhost:8080`; the API is additionally published dir
 | Reproducing a "works on my machine" deployment bug | B | Same images, same network, same proxy path as staging/production |
 | Running the Playwright E2E suite locally | B (scripted by the e2e job) | The suite expects the compose stack at `http://localhost:8080` ([testing-strategy §8](../05-quality/testing-strategy.md#8-e2e-smoke-suite-playwright)) |
 | Onboarding / first clone | B | One command to a fully working system |
-| Integration tests from the IDE | Neither — Testcontainers starts its own throwaway PostgreSQL 18 per run ([testing-strategy §6](../05-quality/testing-strategy.md#6-api-integration-tests-tictactoeapiintegrationtests)) | Tests never touch the dev database |
+| Backend unit tests | Neither — the single unit suite (ADR-0015) is containerless and never touches any database | Suite runs anywhere `dotnet test` runs |
 
 ### 1.4 Canonical local port map
 
@@ -492,7 +492,7 @@ curl -fsS http://localhost:8081/health     # direct API health
 curl -fsS http://localhost:8080/health     # through nginx (exercises the proxy path)
 ```
 
-Seeding: the MVP ships no seeder — the schema is empty on first boot. Test users are created through `POST /api/v1/auth/register` (or by the Playwright/integration fixtures, which use [Respawn](../05-quality/testing-strategy.md#95-database-isolation-respawn) against their own Testcontainers database, never the dev one). For a demo dataset, register two users via the UI and open a game; everything else (lobby, presence) derives live.
+Seeding: the MVP ships no seeder — the schema is empty on first boot. Test users are created through `POST /api/v1/auth/register` (the backend suite is containerless, ADR-0015, and never touches any database). For a demo dataset, register two users via the UI and open a game; everything else (lobby, presence) derives live.
 
 ## Assumptions
 

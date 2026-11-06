@@ -55,9 +55,9 @@ Dependencies point inward only ([clean architecture §1](../01-architecture/clea
 | Project | Allowed | Forbidden |
 | --- | --- | --- |
 | `TicTacToe.Domain` | Pure C#/BCL only: aggregates, value objects, domain events, domain exceptions, repository interfaces | **No project references; no NuGet packages** (not even Cortex.Mediator/EF); no DTOs, no HTTP/DB/serialization concepts |
-| `TicTacToe.Application` | References Domain; Cortex.Mediator, FluentValidation, Mapster; abstractions (`IUnitOfWork`, `ICurrentUser`, `IIdentityService`, `ITokenService`, `IPresenceTracker`, `IGameNotifier`, `IDateTimeProvider`, `IReadDbContext`); DTOs; validators; behaviors | **No EF Core / Npgsql types in public contracts** (repositories speak aggregates; persistence lives behind Infrastructure implementations); no SignalR, no Identity types; no `HttpContext` |
-| `TicTacToe.Infrastructure` | References Application + Domain; EF Core + Npgsql, Identity, JWT, SignalR implementations, hosted services | **No controllers, no hubs**; never references `TicTacToe.Api`; no business rules — only adaptation of Application contracts |
-| `TicTacToe.Api` | References Application (+ Infrastructure for DI composition only); controllers, `GameHub`, middleware, auth/rate-limit/OpenAPI/Serilog setup | **Thin controllers**: a `Send` to `IMediator` and a mapping of `Result` to an action — no repositories, no `DbContext`, no aggregates, no business logic |
+| `TicTacToe.Application` | References Domain; Cortex.Mediator, FluentValidation; `Contracts/` (`IApplicationUnitOfWork`, `Repositories/`, `Services/`); `Features/<Feature>/Command|Query` with DTOs and validators; `Common/` (Results, Behaviors, Events) | **No EF Core / Npgsql types in public contracts** (repositories speak aggregates; persistence lives behind Infrastructure implementations); no SignalR, no Identity types; no `HttpContext` |
+| `TicTacToe.Infrastructure` | References Application + Domain; `Data/` (ApplicationDbContext, UnitOfWork/ApplicationUnitOfWork, generic Repository, repositories, migrations), `Extensions/`, `Identity/`, `Services/` | **No controllers, no hubs**; never references the host; no business rules — only adaptation of Application contracts |
+| `TicTacToe.Api` | References Application (+ Infrastructure for DI composition only); controllers, `GameHub`, middleware, `Realtime/SignalRGameNotifier`, auth/OpenAPI/Serilog setup | **Thin controllers**: a `SendAsync`/`QueryAsync` to `IMediator` and a mapping of `Result` to an action — no repositories, no `DbContext`, no aggregates, no business logic |
 
 Two corollaries: a new dependency may only enter at the layer that owns it (e.g. only Infrastructure sees Npgsql); and any type that appears in a public Application signature must itself live in Domain/Application — never an Infrastructure type leaked through.
 
@@ -85,7 +85,7 @@ Rules:
 | Rule | Detail |
 | --- | --- |
 | One use case, one request, one handler | `CreateGameCommand` has exactly one `CreateGameCommandHandler`; no god-handlers, no handler dispatching to other handlers |
-| One file trio per use case | `<Request>.cs`, `<Request>Handler.cs`, `<Request>Validator.cs` in a feature folder (`Application/Games/MakeMove/`) — findable by folder, not search |
+| One file trio per use case | `<Name>Command.cs`, `<Name>CommandHandler.cs`, `<Name>CommandValidator.cs` side by side in `Features/<Feature>/Command/` (queries in `Query/`) — findable by folder, not search |
 | A validator per command | Every command has a FluentValidation validator even if trivial today; queries validate only when they accept input (e.g. `status` filter) |
 | Handlers do the orchestration only | Load aggregate → call behavior method → map to DTO → return `Result`; authorization checks against `ICurrentUser` happen before touching the aggregate; no HTTP concepts anywhere near handlers |
 | Controllers and hub stay dumb | Controller = bind → `SendAsync`/`QueryAsync` → map `Result` to action; `GameHub` = presence + group logic only. Any `if` that encodes a game rule in a controller/hub is a bug |

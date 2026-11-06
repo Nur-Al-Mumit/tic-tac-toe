@@ -12,10 +12,10 @@ Dependencies point inward only. The Domain references nothing; Application depen
 
 ```mermaid
 flowchart TD
-    Api["TicTacToe.Api<br/>Controllers · Hubs · Middleware · DI composition<br/>references Application + Infrastructure (DI only)"]
-    Infra["TicTacToe.Infrastructure<br/>Persistence · Identity · Realtime<br/>references Application + Domain"]
-    App["TicTacToe.Application<br/>Use cases (commands/queries) · Behaviors · Abstractions · DTOs<br/>references Domain"]
-    Domain["TicTacToe.Domain<br/>Game aggregate · Value objects · Domain events · Repository interfaces · Domain exceptions<br/>references nothing"]
+    Web["TicTacToe.Api<br/>Controllers · Hubs · Middleware · DI composition<br/>references Application + Infrastructure (DI only)"]
+    Infra["TicTacToe.Infrastructure<br/>Data · Identity · Extensions<br/>references Application + Domain"]
+    App["TicTacToe.Application<br/>Features (Command/Query) · Behaviors · Contracts · DTOs<br/>references Domain"]
+    Domain["TicTacToe.Domain<br/>Entities/GameAggregate · Contracts (IAggregateRoot, IRepository, IUnitOfWork) · Domain exceptions<br/>references nothing"]
 
     Api --> App
     Api -.->|DI composition only| Infra
@@ -37,10 +37,10 @@ What the rule buys this project:
 
 | Project | Responsibility | References | Tests |
 | --- | --- | --- | --- |
-| `TicTacToe.Domain` | Aggregates, entities, value objects, domain events, domain exceptions, repository interfaces (they speak in aggregates) | none | `TicTacToe.Domain.UnitTests` |
-| `TicTacToe.Application` | Use cases as commands/queries + handlers, DTOs, FluentValidation validators, pipeline behaviors, `Result<T>`, abstractions (`IUnitOfWork`, `ICurrentUser`, `IIdentityService`, `ITokenService`, `IPresenceTracker`, `IGameNotifier`, `IDateTimeProvider`, `IReadDbContext`), Mapster mappings, domain-event notification handlers | Domain | `TicTacToe.Application.UnitTests` |
-| `TicTacToe.Infrastructure` | `AppDbContext`, entity configurations, migrations, repository and UnitOfWork implementations, Identity stores, JWT/refresh token service, `PresenceTracker`, `SignalRGameNotifier`, clock, hosted services | Application, Domain | covered by `TicTacToe.Api.IntegrationTests` |
-| `TicTacToe.Api` | Controllers, `GameHub`, middleware (exception handling, correlation ID), auth setup, OpenAPI/Scalar, rate limiting, Serilog, DI composition root | Application, Infrastructure (composition only) | `TicTacToe.Api.IntegrationTests` |
+| `TicTacToe.Domain` | `Entities/GameAggregate` (Game, Move, enums, result VO, events, board evaluator), `Entities/PlayerProfile`, `Contracts` (`IAggregateRoot<TKey>`, generic `IRepository<TAggregateRoot,TKey>`, `IUnitOfWork`, `IDomainEvent`, `IHasDomainEvents`), domain exceptions | none | `TicTacToe.Application.UnitTests` (domain rules live there, ADR-0015) |
+| `TicTacToe.Application` | `Features/<Feature>/Command` + `Query` (vertical slices: `<Name>Command{,Handler,Validator}.cs`), feature DTOs and event handlers, `Contracts/` (`IApplicationUnitOfWork` exposing the repositories, `Repositories/`, `Services/` — `ICurrentUser`, `IIdentityService`, `ITokenService`, `IGameNotifier`, `IDateTimeProvider`, `IReadDbContext`), `Common/` (`Results/`, `Behaviors/`, `Events/`) | Domain | `TicTacToe.Application.UnitTests` |
+| `TicTacToe.Infrastructure` | `Data/` (`ApplicationDbContext` with inline configurations, `UnitOfWork` base + `ApplicationUnitOfWork` (post-commit event dispatch), generic `Repository<T,TKey>`, `Repositories/`, `Migrations/`, `ReadDbContext`), `Extensions/` (`DependencyInjections`, `DbContextExtension`, `IdentityConfiguration`), `Identity/` (ApplicationUser, IdentityService, TokenService, RefreshToken), `Services/` (clock) | Application, Domain | — (unit suite via Application seams) |
+| `TicTacToe.Api` | Host: `Controllers/`, `Hubs/GameHub`, `Middleware/` (exception handling, correlation ID), `Realtime/SignalRGameNotifier`, `Services/CurrentUser`, auth setup, OpenAPI/Scalar, Serilog, DI composition root | Application, Infrastructure (composition only) | — |
 
 ## 3. Folder-by-Folder Content Specification
 
@@ -49,129 +49,84 @@ The canonical solution layout (expands PRD §6.4 to file level). Every file belo
 ```text
 src/
   TicTacToe.Domain/
-    Common/
-      Entity.cs                    — abstract base: Id (Guid), equality by identity
-      AggregateRoot.cs             — : Entity; collects IDomainEvent; raises/clears events
-      ValueObject.cs               — abstract base: value-based equality (GetEqualityComponents)
-      IDomainEvent.cs              — marker interface for all domain events
-    Games/
-      Game.cs                      — aggregate root (state + behavior, §5)
-      Move.cs                      — child entity of Game (Position, Mark, PlayerId, MoveNumber, PlayedAtUtc)
-      Mark.cs                      — value object/enum-like: X, O
-      GameStatus.cs                — enum: Waiting = 0, InProgress = 1, Finished = 2, Cancelled = 3
-      Board.cs                     — value object rebuilt from Moves; occupancy + win-line evaluation
-      GameResult.cs                — value object: Outcome (XWins|OWins|Draw), Reason (Normal|Forfeit), WinningLine
-      Events/
-        GameCreated.cs             — GameId, HostPlayerId, CreatedAtUtc
-        GameStarted.cs             — GameId, PlayerXId, PlayerOId, StartedAtUtc
-        MoveMade.cs                — GameId, Position, Mark, MoveNumber, PlayedAtUtc
-        GameFinished.cs            — GameId, GameResult, FinishedAtUtc
-        GameCancelled.cs           — GameId, CancelledByPlayerId, CancelledAtUtc
-      IGameRepository.cs           — GetByIdAsync, GetActiveGameForPlayerAsync, AddAsync, Update
-      WinLines.cs                  — the 8 winning lines as a static table (used by Board)
-    Players/
-      PlayerProfile.cs             — entity: Id (= identity user id), Username, CreatedAtUtc
-      IPlayerProfileRepository.cs  — GetByIdAsync, GetByUsernameAsync, AddAsync
+    Contracts/
+      IAggregateRoot.cs            — IAggregateRoot<TKey> { Id } (entities implement it directly)
+      IRepository.cs               — generic repository contract (Add/Edit/Get/Count/Remove families)
+      IUnitOfWork.cs               — Save() / SaveAsync()
+      IDomainEvent.cs              — EventId + OccurredOnUtc
+      IHasDomainEvents.cs          — DomainEvents collection + ClearDomainEvents
+    Entities/
+      GameAggregate/
+        Game.cs                    — aggregate root: Create/Join/MakeMove/Forfeit/Cancel + events + xmin Version
+        Move.cs                    — child entity (Position, Mark, PlayerId, MoveNumber, PlayedAtUtc; Id is EF-generated)
+        GameEnums.cs               — Mark, GameStatus, GameOutcome, FinishReason
+        GameResult.cs              — value object: Outcome, Reason, WinningLine
+        GameEvents.cs              — GameCreated, GameStarted, MoveMade, GameFinished, GameCancelled
+        Board.cs                   — the 8 winning lines + evaluation over moves
+      PlayerProfile.cs             — Id (= identity user id), Username, CreatedAtUtc
     Exceptions/
-      GameFullException.cs
-      NotYourTurnException.cs
-      CellOccupiedException.cs
-      InvalidPositionException.cs
-      GameNotInProgressException.cs
-      CannotJoinOwnGameException.cs
+      GameExceptions.cs            — GameFull, NotYourTurn, CellOccupied, InvalidPosition, GameNotInProgress, CannotJoinOwnGame
   TicTacToe.Application/
-    Common/
-      Behaviors/
-        LoggingBehavior.cs         — logs every request start/end with correlation data
-        ValidationBehavior.cs      — runs all FluentValidation validators, throws ValidationException → 400
-        UnitOfWorkBehavior.cs      — SaveChanges + post-commit event dispatch for commands
-        PerformanceBehavior.cs     — warns when a handler exceeds the slow-request threshold
-      Interfaces/
-        IUnitOfWork.cs             — SaveChangesAsync + domain-event dispatch contract
-        ICurrentUser.cs            — UserId, Username of the JWT caller
-        IIdentityService.cs        — register/login/lockout via Identity, without leaking Identity types
-        ITokenService.cs           — issue access token; create/rotate/revoke hashed refresh tokens
-        IPresenceTracker.cs        — add/remove connections, online snapshot
-        IGameNotifier.cs           — broadcast hub events (LobbyX/GameX methods), implemented in Realtime
-        IDateTimeProvider.cs       — UtcNow abstraction for determinism
-        IReadDbContext.cs          — read-side DbSets/Queryables for projections (AsNoTracking)
-      Results/
-        Result.cs                  — Result and Result<T>: Success/Failure factories
-        Error.cs                   — record Error(string Code, string Message)
-      Exceptions/
-        NotFoundException.cs       — mapped to 404 by the exception middleware
-      Mappings/
-        MappingConfigurations.cs   — Mapster config: entities/commands → DTOs (no Domain magic)
-    Auth/
-      Register/
-        RegisterCommand.cs  RegisterCommandHandler.cs  RegisterCommandValidator.cs
-      Login/
-        LoginCommand.cs     LoginCommandHandler.cs     LoginCommandValidator.cs
-      RefreshToken/
-        RefreshTokenCommand.cs  RefreshTokenCommandHandler.cs  RefreshTokenCommandValidator.cs
-      Logout/
-        LogoutCommand.cs    LogoutCommandHandler.cs    LogoutCommandValidator.cs
-      AuthResponse.cs  AuthDtos.cs (CurrentUserDto)
-    Games/
-      CreateGame/  (CreateGameCommand + Handler + Validator)
-      JoinGame/    (JoinGameCommand + Handler + Validator)
-      MakeMove/    (MakeMoveCommand + Handler + Validator)
-      CancelGame/  (CancelGameCommand + Handler + Validator)
-      ForfeitGame/ (ForfeitGameCommand + Handler + Validator)
-      GetLobbyGames/ (GetLobbyGamesQuery + Handler)
-      GetGameById/   (GetGameByIdQuery + Handler)
-      GetMyActiveGame/ (GetMyActiveGameQuery + Handler)
-      GameDto.cs  LobbyGameDto.cs  GameDtos.cs (PlayerDto, ResultDto)
-      EventHandlers/
-        GameCreatedNotificationHandler.cs  GameStartedNotificationHandler.cs
-        MoveMadeNotificationHandler.cs     GameFinishedNotificationHandler.cs
-        GameCancelledNotificationHandler.cs
-    Players/
-      GetOnlinePlayers/ (GetOnlinePlayersQuery + Handler)
-      OnlinePlayerDto.cs
-    DependencyInjection.cs         — AddApplication(): AddCortexMediator, validators, behaviors, Mapster
-  TicTacToe.Infrastructure/
-    Persistence/
-      AppDbContext.cs              — IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid> + DbSets
-      AppConfigDbContextFactory.cs — design-time factory for `dotnet ef`
-      Configurations/
-        GameConfiguration.cs       — snake_case, owned Result, xmin token, indexes, FKs
-        MoveConfiguration.cs       — owned/child collection, CHECK 0..8, unique constraints
-        PlayerProfileConfiguration.cs
-        RefreshTokenConfiguration.cs
-      Migrations/                  — EF Core migration snapshots (generated)
+    Contracts/
+      IApplicationUnitOfWork.cs    — : IUnitOfWork; exposes GameRepository + PlayerProfileRepository
       Repositories/
-        GameRepository.cs          — implements Domain IGameRepository
-        PlayerProfileRepository.cs — implements Domain IPlayerProfileRepository
-      ReadDbContext.cs / ReadDbSet — IReadDbContext implementation over AppDbContext (AsNoTracking)
-      UnitOfWork.cs                — SaveChangesAsync + interceptor-based event collection + dispatch
-      DomainEventInterceptor.cs    — collects events from tracked aggregates pre-save
+        IGameRepository.cs         — : IRepository<Game, Guid> + GetGameByIdAsync/GetActiveGameForPlayerAsync/Detach
+        IPlayerProfileRepository.cs
+      Services/
+        ICurrentUser.cs  IIdentityService.cs  ITokenService.cs  IGameNotifier.cs  IDateTimeProvider.cs  IReadDbContext.cs
+    Common/
+      Results/                     — Result, Result<T>, Error, DomainErrors (exception → Error mapping)
+      Behaviors/                   — UnitOfWorkCommandPipelineBehavior (SaveAsync after handler success)
+      Events/                      — DomainEventNotification<TEvent> wrapper + factory (keeps Domain package-free)
+    Features/
+      Auth/
+        Command/                   — UserRegisterCommand{,Handler,Validator}, UserLogin*, UserRefreshToken*, UserLogout*
+        Dtos/AuthDtos.cs           — UserDto, AuthResponse
+      Games/
+        Command/                   — GameCreate*, GameJoin*, GameMove*, GameCancel*, GameLeave* (each Command+Handler+Validator)
+        Query/                     — GetAllGamesQuery+Handler, GetGameByIdQuery*+Handler, GetMyActiveGameQuery+Handler
+        Dtos/GameDtos.cs           — GameDto, LobbyGameDto, PlayerRef, GameResultDto + mappings
+        GameDtoLoader.cs           — assembles GameDto (profiles lookup, read-side reload)
+        EventHandlers/             — one INotificationHandler per domain event → IGameNotifier
+    DependencyInjection.cs         — AddApplication(): GameDtoLoader, validators, AddCortexMediator + behaviors
+  TicTacToe.Infrastructure/
+    Data/
+      ApplicationDbContext.cs      — IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>; inline configurations (snake_case, owned Result, xmin, partial unique indexes)
+      UnitOfWork.cs                — abstract base: Save/SaveAsync over the DbContext
+      ApplicationUnitOfWork.cs     — : UnitOfWork, IApplicationUnitOfWork; SaveAsync → save → publish domain events → clear
+      Repository.cs                — generic Repository<TAggregateRoot, TKey> base
+      Repositories/
+        GameRepository.cs          — : Repository<Game, Guid>, IGameRepository (Include moves, Detach)
+        PlayerProfileRepository.cs
+      ReadDbContext.cs             — IReadDbContext over ApplicationDbContext (AsNoTracking)
+      Migrations/                  — EF Core migrations + snapshot
+    Extensions/
+      DependencyInjections.cs      — AddInfrastructure(): DbContext, identity config, repositories, UnitOfWork, services
+      DbContextExtension.cs        — AddDbContext (Npgsql + snake_case naming)
+      IdentityConfiguration.cs     — IdentityCore options + JwtBearer (incl. hub access_token query)
     Identity/
       ApplicationUser.cs           — IdentityUser<Guid>
-      IdentityService.cs           — register, find by username/email, check password, lockout
+      IdentityService.cs           — register (user + profile in one transaction), validate credentials, lockout
       TokenService.cs              — JWT creation; 256-bit refresh tokens, hashed, rotated, reuse detection
-      RefreshToken.cs              — entity for refresh_tokens table
-    Realtime/
-      PresenceTracker.cs           — ConcurrentDictionary<Guid, HashSet<string>> (userId → connectionIds)
-      SignalRGameNotifier.cs       — IGameNotifier over IHubContext<GameHub>
-    Hosting/
-      DisconnectGraceService.cs    — 30 s forfeit timers; cancels Waiting games stale > 15 min
-    DependencyInjection.cs         — AddInfrastructure(): DbContext (Npgsql), Identity, JWT, repos, hosted services
+      RefreshToken.cs              — entity for refresh_tokens
+    Services/
+      SystemDateTimeProvider.cs
   TicTacToe.Api/
     Controllers/
       AuthController.cs            — /api/v1/auth (register, login, refresh, logout, me)
       GamesController.cs           — /api/v1/games (create, list, detail, active, join, moves, cancel, leave)
-      PlayersController.cs         — /api/v1/players/online
     Hubs/
-      GameHub.cs                   — /hubs/game: groups lobby / game-{id}; presence lifecycle
+      GameHub.cs                   — /hubs/game: JoinGameRoom/LeaveGameRoom with participant validation
     Middleware/
-      ExceptionHandlingMiddleware.cs — domain/validation → ProblemDetails mapping
+      ExceptionHandlingMiddleware.cs — Cortex ValidationException → 400 ProblemDetails; others → logged 500
       CorrelationIdMiddleware.cs
-    Program.cs                     — composition root: Serilog, auth, rate limiting, OpenAPI + Scalar, health
-tests/
-  TicTacToe.Domain.UnitTests/      — game rules, invariants, all 8 win lines, forfeit, draw
-  TicTacToe.Application.UnitTests/ — handlers (NSubstitute mocks), validators, behaviors, Result mapping
-  TicTacToe.Api.IntegrationTests/  — WebApplicationFactory + Testcontainers PostgreSQL + Respawn; NetArchTest layering rules
+    Realtime/SignalRGameNotifier.cs — IGameNotifier over IHubContext<GameHub>
+    Services/CurrentUser.cs        — ICurrentUser from JWT claims
+    Common/HttpResults.cs          — single Result → HTTP mapping (api-spec §1.4 registry)
+    Program.cs                     — composition root: Serilog, auth, CORS, OpenAPI + Scalar, health, hub mapping
+test/
+  TicTacToe.Application.UnitTests/ — the ONE test project (ADR-0015): Features/<X>/{Commands,Queries}/…HandlerTests,
+                                     Features/Games/GameTests.cs (domain rules), Common/ResultTests.cs — NUnit + Shouldly
 client/                            — Angular 22 workspace (see 04-frontend)
 docs/
 docker-compose.yml
@@ -277,17 +232,15 @@ Design rules:
 
 ## 8. Enforcing the Layering (Architecture Tests)
 
-The dependency rule is guarded mechanically in `TicTacToe.Api.IntegrationTests` using **NetArchTest** so violations fail CI, not review:
+The dependency rule is guarded by review against these checks (the NetArchTest harness may return post-V1):
 
-| Rule | Assertion |
+| Rule | Enforcement |
 | --- | --- |
-| Domain purity | `Types.In(TicTacToe.Domain)` reference no other project and no `Microsoft.*`/`Infra` packages — only BCL |
-| Application isolation | `TicTacToe.Application` may reference only `TicTacToe.Domain` (plus Cortex.Mediator/FluentValidation/Mapster package types) |
+| Domain purity | `TicTacToe.Domain` references no other project and no packages — only BCL |
+| Application isolation | `TicTacToe.Application` may reference only `TicTacToe.Domain` (plus Cortex.Mediator/FluentValidation/EF async-LINQ types) |
 | Infrastructure inward-only | `TicTacToe.Infrastructure` references only `TicTacToe.Application` and `TicTacToe.Domain` — never `TicTacToe.Api` |
 | Api not referenced | no type in any layer references `TicTacToe.Api` |
-| Controllers stay thin | `ApiController` types use `IMediator` and return `IActionResult`; they must not reference `AppDbContext`, repositories or Domain aggregates |
-| Hub thinness | `GameHub` uses `IPresenceTracker` and `IMediator` only, never repositories or DbContext |
-| Queries never load aggregates | `*QueryHandler` types must not reference `IGameRepository` (read side goes through `IReadDbContext` only) |
+
 
 These run alongside the integration suite on every build in CI ([CI/CD](../06-devops/ci-cd.md), [Testing strategy](../05-quality/testing-strategy.md)).
 

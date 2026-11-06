@@ -173,7 +173,7 @@ Design principles, tokens, page specs and animation details live in the frontend
 
 ## 7. Technical Blueprint Summary
 
-> **Stack modernization (2026-11-04):** the original technical documentation §6.2 pinned .NET 8 / EF Core 8 / PostgreSQL 16 / Angular 17+. Per stakeholder decision, this project targets the **latest stable stack** below; the original document's §6.2 has since been aligned to this decision (its v1.1 update, archived at [00-product/archive](archive/original-technical-documentation.md)). Domain design, API contracts and database design are unchanged. Recorded in [ADR-0011](../01-architecture/adr/0011-latest-stable-stack.md) and [ADR-0012](../01-architecture/adr/0012-nunit-test-framework.md); the in-process mediator is Cortex.Mediator per [ADR-0013](../01-architecture/adr/0013-cortex-mediator.md) and assertions are Shouldly per [ADR-0014](../01-architecture/adr/0014-shouldly-assertions.md).
+> **Stack modernization (2026-11-04):** the original technical documentation §6.2 pinned .NET 8 / EF Core 8 / PostgreSQL 16 / Angular 17+. Per stakeholder decision, this project targets the **latest stable stack** below; the original document's §6.2 has since been aligned to this decision (its v1.1 update, archived at [00-product/archive](archive/original-technical-documentation.md)). Domain design, API contracts and database design are unchanged. Recorded in [ADR-0011](../01-architecture/adr/0011-latest-stable-stack.md) and [ADR-0012](../01-architecture/adr/0012-nunit-test-framework.md); the in-process mediator is Cortex.Mediator per [ADR-0013](../01-architecture/adr/0013-cortex-mediator.md) and assertions are Shouldly per [ADR-0014](../01-architecture/adr/0014-shouldly-assertions.md) and the code follows the vertical-slice structure with a single unit test project per [ADR-0015](../01-architecture/adr/0015-vertical-slice-structure-and-unit-only-tests.md).
 
 | Layer | Choice |
 | --- | --- |
@@ -187,7 +187,7 @@ Design principles, tokens, page specs and animation details live in the frontend
 | Real-time | SignalR |
 | API docs | .NET built-in OpenAPI (Microsoft.AspNetCore.OpenApi) + Scalar UI |
 | Logging | Serilog |
-| Backend tests | **NUnit** (mandated) + **Shouldly** assertions, NSubstitute, Testcontainers (PostgreSQL), Respawn |
+| Backend tests | **NUnit** (mandated) + **Shouldly** assertions + NSubstitute — one unit project (`test/TicTacToe.Application.UnitTests`, ADR-0015) |
 | Frontend | Angular 22 — standalone components, signals, **zoneless** change detection |
 | Styling | Tailwind CSS 4 (CSS-first `@theme` configuration) |
 | Real-time client | @microsoft/signalr |

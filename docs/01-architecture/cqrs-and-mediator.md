@@ -28,15 +28,15 @@ All commands/queries are dispatched through `IMediator` from controllers (REST u
 | Kind | Request | Inputs | Returns | REST surface |
 | --- | --- | --- | --- | --- |
 | Command (`ICommand<AuthResponse>`) | `RegisterCommand` | username, email, password | `Result<AuthResponse>` | `POST /auth/register` → 201 |
-| Command (`ICommand<AuthResponse>`) | `LoginCommand` | identifier (email or username), password | `Result<AuthResponse>` | `POST /auth/login` → 200 |
-| Command (`ICommand<AuthResponse>`) | `RefreshTokenCommand` | refreshToken | `Result<AuthResponse>` | `POST /auth/refresh` → 200 |
-| Command (`ICommand`) | `LogoutCommand` | refreshToken (from `ICurrentUser` + body) | `Result` | `POST /auth/logout` → 204 |
-| Command (`ICommand<GameDto>`) | `CreateGameCommand` | — (host = current user) | `Result<GameDto>` | `POST /games` → 201 |
-| Command (`ICommand<GameDto>`) | `JoinGameCommand` | gameId (joiner = current user) | `Result<GameDto>` | `POST /games/{id}/join` → 200 |
-| Command (`ICommand<GameDto>`) | `MakeMoveCommand` | gameId, position (player = current user) | `Result<GameDto>` | `POST /games/{id}/moves` → 200 |
-| Command (`ICommand`) | `CancelGameCommand` | gameId (host = current user) | `Result` | `POST /games/{id}/cancel` → 204 |
-| Command (`ICommand`) | `ForfeitGameCommand` | gameId, playerId (playerId required because the `DisconnectGraceService` forfeits on behalf of a disconnected user) | `Result` | `POST /games/{id}/leave` → 204 |
-| Query (`IQuery<IReadOnlyList<LobbyGameDto>>`) | `GetLobbyGamesQuery` | status? (`waiting`, `inprogress` filter) | `Result<IReadOnlyList<LobbyGameDto>>` | `GET /games` → 200 |
+| Command (`ICommand<AuthResponse>`) | `UserLoginCommand` | identifier (email or username), password | `Result<AuthResponse>` | `POST /auth/login` → 200 |
+| Command (`ICommand<AuthResponse>`) | `UserRefreshTokenCommand` | refreshToken | `Result<AuthResponse>` | `POST /auth/refresh` → 200 |
+| Command (`ICommand`) | `UserLogoutCommand` | refreshToken (from `ICurrentUser` + body) | `Result` | `POST /auth/logout` → 204 |
+| Command (`ICommand<GameDto>`) | `GameCreateCommand` | — (host = current user) | `Result<GameDto>` | `POST /games` → 201 |
+| Command (`ICommand<GameDto>`) | `GameJoinCommand` | gameId (joiner = current user) | `Result<GameDto>` | `POST /games/{id}/join` → 200 |
+| Command (`ICommand<GameDto>`) | `GameMoveCommand` | gameId, position (player = current user) | `Result<GameDto>` | `POST /games/{id}/moves` → 200 |
+| Command (`ICommand`) | `GameCancelCommand` | gameId (host = current user) | `Result` | `POST /games/{id}/cancel` → 204 |
+| Command (`ICommand`) | `GameLeaveCommand` | gameId, playerId (playerId required because the `DisconnectGraceService` forfeits on behalf of a disconnected user) | `Result` | `POST /games/{id}/leave` → 204 |
+| Query (`IQuery<IReadOnlyList<LobbyGameDto>>`) | `GetAllGamesQuery` | status? (`waiting`, `inprogress` filter) | `Result<IReadOnlyList<LobbyGameDto>>` | `GET /games` → 200 |
 | Query (`IQuery<GameDto>`) | `GetGameByIdQuery` | gameId | `Result<GameDto>` | `GET /games/{id}` → 200 / 404 |
 | Query (`IQuery<GameDto?>`) | `GetMyActiveGameQuery` | — (current user) | `Result<GameDto?>` | `GET /games/active` → 200 / 204 |
 | Query (`IQuery<IReadOnlyList<OnlinePlayerDto>>`) | `GetOnlinePlayersQuery` | — | `Result<IReadOnlyList<OnlinePlayerDto>>` | `GET /players/online` → 200 |
@@ -135,7 +135,7 @@ sequenceDiagram
     actor P as Player (SPA)
     participant C as GamesController
     participant PB as Command pipeline (Log → Val → UoW → Perf)
-    participant MH as MakeMoveHandler
+    participant MH as GameMoveCommandHandler
     participant G as Game aggregate
     participant UO as UnitOfWork
     participant DB as PostgreSQL
@@ -143,7 +143,7 @@ sequenceDiagram
     participant GN as IGameNotifier → GameHub
 
     P->>C: POST /api/v1/games/{id}/moves { position }
-    C->>PB: IMediator.SendAsync(MakeMoveCommand)
+    C->>PB: IMediator.SendAsync(GameMoveCommand)
     PB->>MH: after validation passes
     MH->>G: game.MakeMove(playerId, position)
     Note over G: guards pass; Move appended; board evaluated; turn flipped; MoveMade (+ GameFinished) raised

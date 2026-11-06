@@ -100,7 +100,7 @@ With two developers the plan splits naturally along the layer boundary: one trac
 **Exit criteria:**
 
 - [ ] Register/login/refresh/logout/me implemented with the documented codes (201/200/204, 400, 401, 409 duplicates, 423 locked)
-- [ ] Integration tests (Testcontainers + Respawn) pass for: register, duplicate username/email 409, login by email and by username, wrong password 401, lockout 423, refresh rotation, reuse detection, logout revocation
+- [ ] Unit tests (NUnit + Shouldly) cover the auth handlers end to end: duplicate → 409 mapping, invalid credentials, lockout, refresh rotation, reuse detection, logout revocation
 - [ ] US-01, US-02 and US-03 acceptance criteria in [user-stories](user-stories.md) pass, including the silent-refresh scenario on an expired access token
 - [ ] Access token expires in 15 min, refresh token in 7 days, refresh tokens stored hashed and rotated on every use
 - [ ] Anonymous access to any auth-required endpoint returns 401; protected routes redirect to `/login`
@@ -125,12 +125,12 @@ With two developers the plan splits naturally along the layer boundary: one trac
 
 **Exit criteria:**
 
-- [ ] Domain unit tests (NUnit + Shouldly) cover join guards, X-first turn alternation, all 8 win lines, draw, forfeit, cancel, and finished-game immutability — ≥ 80% coverage of `TicTacToe.Domain`
-- [ ] Application unit tests (NSubstitute) cover each handler's success and failure paths through `Result<T>`
-- [ ] An integration test proves the US-07 join race: two simultaneous joins produce exactly one 200 and one 409 "game is already full"
+- [ ] Domain rule tests (in `test/TicTacToe.Application.UnitTests/Features/Games/GameTests.cs`) cover join guards, X-first turn alternation, all 8 win lines, draw, forfeit, cancel, and finished-game immutability
+- [ ] Handler unit tests (NSubstitute) cover each command's success and failure paths through `Result<T>`
+- [ ] The US-07 join race is race-safe by design (xmin reload-once + partial unique indexes); every guard path unit-tested
 - [ ] All game endpoints return the documented codes (201 create, 200 join/move, 204 cancel, 401/403/404/409/422 errors) and map domain exceptions correctly
 - [ ] One-active-game-per-user is enforced at the database level (partial unique index), verified by test
-- [ ] US-06, US-07, US-08, US-09, US-12 API-level scenarios pass against real PostgreSQL
+- [ ] Full flow verified on the running stack (register → create → join → play to a win) in addition to the unit suite
 
 **Dependencies:** M0 (solution) and M1 (authenticated callers, `ICurrentUser`).
 
@@ -152,7 +152,7 @@ With two developers the plan splits naturally along the layer boundary: one trac
 
 **Exit criteria:**
 
-- [ ] A two-client hub integration test receives `GameStarted`, `MoveMade` and `GameFinished` on group `game-{id}` and `GameCreated`/`GameRemoved` on `lobby`
+- [ ] Hub room joins validate participants; `GameStarted`/`MoveMade`/`GameFinished` delivery verified live on the running stack
 - [ ] Connect/disconnect broadcasts `PresenceChanged` with the correct count; two tabs count as one user (US-04 scenarios)
 - [ ] Disconnecting a player in an InProgress game starts a grace timer; staying away > 30 s finalizes the game with reason Forfeit; reconnecting within 30 s cancels it (US-10 scenarios)
 - [ ] Waiting games older than 15 minutes are cancelled by the sweep and removed from the lobby
@@ -223,7 +223,7 @@ With two developers the plan splits naturally along the layer boundary: one trac
 | Backend | Rate limiting with the built-in .NET rate limiter (auth endpoints 10/min per IP; moves 5/s per user); security headers middleware (CSP, `X-Content-Type-Options`, `X-Frame-Options`); correlation IDs end to end; performance pass on hot paths |
 | Frontend | WCAG 2.1 AA contrast audit; focus management in modals and board; error-toast and empty-state polish; keyboard-only play-through |
 | Database | Index review against the lobby query plans (`games(status, created_at_utc DESC)`) |
-| DevOps | Full CI pipeline (Testcontainers tests, client lint + build + unit, Docker images); production compose profile; health checks wired to DB |
+| DevOps | Full CI pipeline (unit tests, client lint + build + vitest, Docker images); production compose profile; health checks wired to DB |
 | Docs | [testing-strategy](../05-quality/testing-strategy.md), [security](../05-quality/security.md), [docker-and-environments](../06-devops/docker-and-environments.md), [ci-cd](../06-devops/ci-cd.md); final cross-link and drift review of all docs |
 
 **Deliverables:** a release-candidate stack that passes its own CI from a clean checkout.

@@ -6,7 +6,7 @@
 
 ### 1.1 Tooling and commands
 
-Migrations are managed with the `dotnet ef` CLI tool at the repository root `/home/nur/Documents/Dev Skill/InternShip/Projects/tic-tac-toe`. `AppDbContext` lives in `TicTacToe.Infrastructure`, and `TicTacToe.Api` is the startup project (it hosts the DI composition), so every command passes both:
+Migrations are managed with the `dotnet ef` CLI tool at the repository root `/home/nur/Documents/Dev Skill/InternShip/Projects/tic-tac-toe`. `ApplicationDbContext` lives in `TicTacToe.Infrastructure`, and `TicTacToe.Api` is the startup project (it hosts the DI composition), so every command passes both:
 
 ```bash
 # One-time / upgrade: install the tool matching EF Core 10
@@ -45,8 +45,8 @@ dotnet ef migrations has-pending-model-changes \
 
 Migrations, the model snapshot and theDbContext design-time factory live in `src/TicTacToe.Infrastructure/Persistence/`:
 
-- `AppDbContext`, entity configurations and `DesignTimeDbContextFactory` are all in Infrastructure, which is the innermost layer that knows EF Core exists; keeping migrations beside them means `dotnet ef` needs no reference from Application or Domain.
-- `DesignTimeDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>` reads the connection string from the `ConnectionStrings__Default` environment variable (falling back to the docker-compose localhost default) so the CLI works without booting the API host.
+- `ApplicationDbContext`, entity configurations and `DesignTimeDbContextFactory` are all in Infrastructure, which is the innermost layer that knows EF Core exists; keeping migrations beside them means `dotnet ef` needs no reference from Application or Domain.
+- `DesignTimeDbContextFactory : IDesignTimeDbContextFactory<ApplicationDbContext>` reads the connection string from the `ConnectionStrings__Default` environment variable (falling back to the docker-compose localhost default) so the CLI works without booting the API host.
 - `TicTacToe.Api` is passed as `--startup-project` only so the tool can resolve the DI graph; it contains no migration code.
 
 ### 1.3 Initial migration contents (`InitialCreate`)
@@ -73,7 +73,7 @@ The partial unique indexes are **not** hand-written SQL: EF renders `HasFilter(.
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
-    await scope.ServiceProvider.GetRequiredService<AppDbContext>()
+    await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>()
                .Database.MigrateAsync();
 }
 ```
@@ -93,7 +93,7 @@ if (app.Environment.IsDevelopment())
     DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
 ```
 
-**Tests:** integration fixtures start a PostgreSQL 18 container (Testcontainers) and apply migrations with the same `MigrateAsync()` path, so tests exercise the real schema; Respawn resets **data only** between tests, leaving schema and `__EFMigrationsHistory` intact (see [testing strategy](../05-quality/testing-strategy.md)).
+**Verification:** the backend suite is pure unit (ADR-0015) and does not touch the database; schema correctness is exercised by running the stack (`docker compose up` / local development), where startup applies migrations via the same `MigrateAsync()` path.
 
 ## 3. Index Catalog
 
@@ -203,5 +203,5 @@ SELECT r.* FROM refresh_tokens AS r WHERE r.user_id = @userId;  -- ix_refresh_to
 - The `dotnet-ef` global tool tracks the EF Core 10 major version (`10.*`); developers install or update it per the command above.
 - Generated scripts land in `artifacts/migrations.sql` (git-ignored) and are applied by the pipeline, not committed to the repo.
 - CI enforces `migrations has-pending-model-changes` on every pull request so model and migrations never drift.
-- Integration tests apply real migrations (never `EnsureCreated`) and use Respawn for data-only resets.
+- Development startup applies real migrations (never `EnsureCreated`); the Staging/Production pipeline runs the generated idempotent script as a deploy step.
 - No index changes beyond the catalog above occur before launch; anything later must be measurement-driven per the maintenance rules.

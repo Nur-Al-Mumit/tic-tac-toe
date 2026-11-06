@@ -26,7 +26,7 @@ Parent document: [PRD](PRD.md) · Related: [Roadmap](roadmap.md) · Build order:
 - **Minimal lobby page:** one list of **Waiting** games fetched over REST (on page load, after your own actions, and via a Refresh button), Create Game button, Join button (disabled + "Full" when taken), Cancel for your own waiting game. No tabs, no live updates, no presence.
 - **Game page:** 3×3 board with turn indicator, mark draw + winning-line animations, result modal (Victory / Defeat / Draw) → Back to Lobby, invalid-move shake, a simple Connected/Reconnecting badge, and an explicit **Leave (forfeit)** button — the escape hatch that replaces deferred auto-forfeit. Entering (or reloading) `/game/:id` fetches `GET /games/{id}` and rejoins the hub group — that is V1's whole reconnect story.
 - **Persistence:** the full schema as specified, including `moves` history rows (FR-12 comes free with the design).
-- **Tests for the shipped surface:** Domain unit (all rules, 8 win lines, race paths), Application unit, API integration (auth lifecycle, join race, full playthrough). DoD applies to everything built.
+- **Tests for the shipped surface:** the single NUnit + Shouldly suite in `test/TicTacToe.Application.UnitTests` — domain rules (all 8 win lines, draw, forfeit, immutability), handlers, validators, behaviors. DoD applies to everything built.
 
 ## 3. Deferred Until the Project Resumes (V1.1+)
 

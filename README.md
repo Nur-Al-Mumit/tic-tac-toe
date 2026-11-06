@@ -19,8 +19,8 @@ All project documentation lives in [`docs/`](docs/README.md) — start from the 
 
 ```
 docs/      Product, architecture, backend, database, frontend, quality, DevOps docs + ADRs
-src/       Backend solution — TicTacToe.{Domain,Application,Infrastructure,Api}   (from M0)
-tests/     NUnit test projects — Domain, Application, Api integration             (from M0)
+src/       Backend solution — TicTacToe.{Domain,Application,Infrastructure,Api}   (vertical slices)
+test/      The one NUnit + Shouldly test project — TicTacToe.Application.UnitTests
 client/    Angular 22 SPA                                                        (from M0)
 ```
 
@@ -28,11 +28,11 @@ client/    Angular 22 SPA                                                       
 
 **V1 "Game Live" is implemented** (2026-11-05): register/login with rotating JWT refresh tokens, the rules-complete Game aggregate (all 8 win lines, draw, forfeit, race-safe join via xmin + reload-once), REST game API, live SignalR game events, lobby (create/join/cancel) and the animated game board — exactly the [V1 scope](docs/00-product/v1-scope.md); V1.1 adds presence, live lobby, auto-forfeit and hardening on the same seams.
 
-Verified locally: solution builds with 0 warnings (warnings-as-errors), 68 NUnit tests + 17 vitest specs green. The Testcontainers integration suite (auth lifecycle, full playthrough, simultaneous join race, two-client SignalR) runs in GitHub Actions CI.
+Verified locally: solution builds with 0 warnings (warnings-as-errors), 61 NUnit + Shouldly unit tests (domain rules + handlers) and 17 vitest specs green; the full flow (register → create → join → play to a win) verified on the running stack. CI runs the same suites — no Docker required for tests.
 
 ```bash
 # run everything locally
-dotnet build TicTacToe.slnx && dotnet test tests/TicTacToe.Domain.UnitTests && dotnet test tests/TicTacToe.Application.UnitTests
+dotnet build TicTacToe.slnx && dotnet test test/TicTacToe.Application.UnitTests
 cd client && npm ci && npm test -- --watch=false && npm run build
 docker compose up --build   # postgres 18 + api (:8081) + client (:8080)
 ```

@@ -18,7 +18,7 @@ Working in the code? Read [agents/AGENTS.md](agents/AGENTS.md) first — it carr
 | **01-architecture** | [system-architecture](01-architecture/system-architecture.md) | C4 context/container views, runtime sequences (move, join race, forfeit/reconnect), stack, cross-cutting concerns, scalability. |
 | | [clean-architecture-ddd](01-architecture/clean-architecture-ddd.md) | Dependency rule, file-level folder spec per project, DDD tactical mapping, invariants, domain events, NetArchTest enforcement. |
 | | [cqrs-and-mediator](01-architecture/cqrs-and-mediator.md) | Command/query catalog, pipeline behaviors (Logging → Validation → UnitOfWork → Performance), `Result<T>`, event→broadcast flow. |
-| | [adr/](01-architecture/adr/0001-clean-architecture-and-ddd.md) | 14 decision records (ADRs 0001–0014) with context, alternatives, and consequences. |
+| | [adr/](01-architecture/adr/0001-clean-architecture-and-ddd.md) | 15 decision records (ADRs 0001–0015) with context, alternatives, and consequences. |
 | **02-backend** | [api-spec](02-backend/api-spec.md) | Full REST contract: per-endpoint reference, DTO schemas, canonical error-code registry, OpenAPI/Scalar, versioning. |
 | | [realtime-signalr](02-backend/realtime-signalr.md) | Hub design: groups, event catalog with payloads, lifecycle sequences, grace/forfeit timers, reconnect/resync, scale-out path. |
 | | [auth-identity-jwt](02-backend/auth-identity-jwt.md) | Identity setup, JWT claims/validation, refresh rotation with reuse detection, lockout, token storage strategy. |

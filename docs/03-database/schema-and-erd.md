@@ -310,10 +310,10 @@ The index DDL (`ix_games_status_created_at_utc`, the two partial uniques, `uq_mo
 
 ## 8. How EF Core Maps This
 
-`AppDbContext` lives in `TicTacToe.Infrastructure/Persistence` and derives from `IdentityDbContext` so Identity's stores, schema and migrations come for free:
+`ApplicationDbContext` lives in `TicTacToe.Infrastructure/Persistence` and derives from `IdentityDbContext` so Identity's stores, schema and migrations come for free:
 
 ```csharp
-public sealed class AppDbContext
+public sealed class ApplicationDbContext
     : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
 {
     public DbSet<Game> Games => Set<Game>();
@@ -326,7 +326,7 @@ public sealed class AppDbContext
 Registration (Infrastructure `DependencyInjection.cs`):
 
 ```csharp
-services.AddDbContext<AppDbContext>(options =>
+services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString)
            .UseSnakeCaseNamingConvention());   // all identifiers snake_case
 ```

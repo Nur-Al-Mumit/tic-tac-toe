@@ -79,7 +79,7 @@ Modernized on 2026-11-04 from the original document's §6.2 table (.NET 8 / EF C
 | Real-time | SignalR (server) + @microsoft/signalr (client) | [ADR-0005](adr/0005-rest-moves-signalr-broadcasts.md) |
 | API docs | .NET built-in OpenAPI (Microsoft.AspNetCore.OpenApi) + Scalar UI | [ADR-0011](adr/0011-latest-stable-stack.md) |
 | Logging | Serilog (structured JSON console + correlation IDs) | — |
-| Backend tests | NUnit 4 (mandated), Shouldly, NSubstitute, Testcontainers, Respawn | [ADR-0012](adr/0012-nunit-test-framework.md) · [ADR-0014](adr/0014-shouldly-assertions.md) |
+| Backend tests | NUnit 4 (mandated), Shouldly, NSubstitute — one unit project, `test/TicTacToe.Application.UnitTests` | [ADR-0012](adr/0012-nunit-test-framework.md) · [ADR-0014](adr/0014-shouldly-assertions.md) · [ADR-0015](adr/0015-vertical-slice-structure-and-unit-only-tests.md) |
 | Frontend | Angular 22 — standalone components, signals, zoneless change detection | [ADR-0007](adr/0007-angular-signals-zoneless-tailwind.md) |
 | Styling | Tailwind CSS 4, CSS-first `@theme` (no tailwind.config.js) | [ADR-0007](adr/0007-angular-signals-zoneless-tailwind.md) |
 | Frontend tests | vitest + jsdom (unit), Playwright (E2E) | — |
@@ -195,7 +195,7 @@ sequenceDiagram
 
 ## 6. Deployment View (Summary)
 
-Three docker-compose services on a single node: `postgres:18` (named volume), `api` (ASP.NET Core image), `client` (nginx serving the Angular 22 build). GitHub Actions CI: restore → build → test (Testcontainers-backed integration tests) → lint/build client → build Docker images. EF migrations apply on startup in Development and as a dedicated CI/CD step elsewhere. Full details: [Docker & environments](../06-devops/docker-and-environments.md) and [CI/CD](../06-devops/ci-cd.md).
+Three docker-compose services on a single node: `postgres:18` (named volume), `api` (ASP.NET Core image), `client` (nginx serving the Angular 22 build). GitHub Actions CI: restore → build → unit tests (containerless) → lint/build client → build Docker images. EF migrations apply on startup in Development and as a dedicated CI/CD step elsewhere. Full details: [Docker & environments](../06-devops/docker-and-environments.md) and [CI/CD](../06-devops/ci-cd.md).
 
 ```mermaid
 flowchart LR

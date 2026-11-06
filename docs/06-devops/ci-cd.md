@@ -2,7 +2,7 @@
 
 *The GitHub Actions delivery pipeline for Multiplayer Tic-Tac-Toe: trunk-based branching with required PR checks, the CI workflow (backend, frontend, E2E, security), Docker image publishing to GHCR, and the ordered CD rollout to the VPS with health verification and a safe rollback path.*
 
-The pipeline implements the PRD's fixed CI shape — restore → build → test (Testcontainers) → lint client → build client → build Docker images — and the deployment contract described in [docker-and-environments](docker-and-environments.md). Job names match the summary table in [testing-strategy §12](../05-quality/testing-strategy.md#12-ci-integration).
+The pipeline implements the PRD's fixed CI shape — restore → build → test (containerless — no Docker needed for the test step) → lint client → build client → build Docker images — and the deployment contract described in [docker-and-environments](docker-and-environments.md). Job names match the summary table in [testing-strategy §12](../05-quality/testing-strategy.md#12-ci-integration).
 
 ## 1. Branching Model
 
@@ -54,23 +54,11 @@ jobs:
             --project src/TicTacToe.Infrastructure \
             --startup-project src/TicTacToe.Api
       - run: >
-          dotnet test tests/TicTacToe.Domain.UnitTests tests/TicTacToe.Application.UnitTests
+          dotnet test test/TicTacToe.Application.UnitTests
           -c Release --no-build --collect:"XPlat Code Coverage"
           --results-directory artifacts/backend-unit
       - uses: actions/upload-artifact@v4
         with: { name: backend-unit, path: artifacts/backend-unit }
-
-  backend-integration:
-    runs-on: ubuntu-latest        # Docker is preinstalled — Testcontainers works out of the box
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-dotnet@v4
-        with: { dotnet-version: 10.0.x, cache: true, cache-dependency-path: '**/packages.lock.json' }
-      - run: dotnet restore --locked-mode
-      - run: dotnet build -c Release --no-restore
-      - run: dotnet test tests/TicTacToe.Api.IntegrationTests -c Release --no-build
-      - uses: actions/upload-artifact@v4
-        with: { name: backend-integration, path: 'tests/TicTacToe.Api.IntegrationTests/TestResults' }
 
   frontend-unit:
     runs-on: ubuntu-latest
@@ -86,17 +74,6 @@ jobs:
       - run: npm run build -- --configuration production
       - uses: actions/upload-artifact@v4
         with: { name: frontend-coverage, path: client/coverage }
-
-  e2e:
-    runs-on: ubuntu-latest                       # needs Docker; ubuntu-latest provides it
-    defaults: { run: { working-directory: client } }
-    steps:
-      - uses: actions/checkout@v5
-      - run: docker compose up -d --build         # full stack: postgres + api + client nginx
-      - run: npx playwright install --with-deps
-      - run: npx playwright test                  # baseUrl http://localhost:8080
-      - if: always()
-        run: docker compose down -v
 
   security-audit:
     runs-on: ubuntu-latest
@@ -115,7 +92,7 @@ jobs:
   docker:
     if: github.event_name == 'push'               # images only for main and tags, not PRs
     runs-on: ubuntu-latest
-    needs: [backend-unit, backend-integration, frontend-unit, e2e, security-audit]
+    needs: [backend-unit, frontend-unit, security-audit]
     permissions: { contents: read, packages: write }
     steps:
       - uses: actions/checkout@v5
@@ -161,15 +138,15 @@ A second workflow, `.github/workflows/load.yml`, runs the k6 load/NFR scenarios 
 
 Notes on the workflow:
 
-- **Testcontainers and Docker:** `backend-integration` and `e2e` require a Docker daemon. GitHub-hosted `ubuntu-latest` runners have Docker preinstalled, so the NUnit + Testcontainers suite (PostgreSQL 18 containers) runs unmodified; do not switch these jobs to `macos-*` runners.
+- **No Docker needed in CI:** every shipped job is containerless (ADR-0015) — the backend suite is pure unit, the frontend runs vitest, and image builds happen in the deploy job.
 - `dotnet restore --locked-mode` + `packages.lock.json` makes restores reproducible and is what `setup-dotnet`'s `cache: true` keys on (§4).
 - `dotnet ef migrations has-pending-model-changes` enforces the migration discipline from [migrations-and-indexes §1.1](../03-database/migrations-and-indexes.md#11-tooling-and-commands).
-- The `docker` job builds only after all five gates pass, and never on PRs — PR builds are validated by the compile/build steps in `backend-unit`/`frontend-unit` and the `docker compose up -d --build` in `e2e`.
+- The `docker` job builds only after all five gates pass, and never on PRs — PR builds are validated by the compile/build steps in `backend unit (NUnit + Shouldly)`/`frontend-unit` and the `docker compose up -d --build` in `e2e`.
 
 ## 3. Test Reporting, Coverage and Artifacts
 
 - Every `dotnet test` run publishes TRX results and coverlet `coverage.cobertura.xml` under `artifacts/<job>`; each job uploads its folder with `actions/upload-artifact@v4`, so a failed PR has downloadable results without reading raw logs.
-- ReportGenerator merges the three test projects' coverage into one HTML report (`backend-unit` artifact); frontend coverage is the `vitest --coverage` HTML report (`frontend-coverage` artifact). Uploaded artifacts are retained per repository settings; they are for humans — the gates below are what block merges.
+- ReportGenerator merges the three test projects' coverage into one HTML report (`backend unit (NUnit + Shouldly)` artifact); frontend coverage is the `vitest --coverage` HTML report (`frontend-coverage` artifact). Uploaded artifacts are retained per repository settings; they are for humans — the gates below are what block merges.
 - Coverage gates (fail the job, summarized in [testing-strategy §10.2](../05-quality/testing-strategy.md#102-gates-ci-fails-below)): Domain ≥ 90% line, Application ≥ 80% line, backend combined ≥ 70% line, frontend core ≥ 70% statements.
 - The E2E job uploads Playwright's HTML report and failure traces on red runs (`actions/upload-artifact@v4` with `if: always()`).
 - The deploy job (§5) additionally uploads the exact `migrations.sql` it applied — the auditable record of every schema change that reached a server.
@@ -300,10 +277,10 @@ All values below are **examples/placeholders only — never real values**; every
 | `SSH_PRIVATE_KEY` | same | scp/ssh actions | `-----BEGIN OPENSSH PRIVATE KEY-----b3BlbnNzaC1rZXk…` |
 | `GHCR_PULL_TOKEN` | VPS (`docker login ghcr.io`, bootstrap only) | `docker compose pull` on the VPS | `github_pat_11AB2C…` (fine-grained, `read:packages`) |
 | `POSTGRES_PASSWORD` | VPS `/opt/tictactoe/.env` (chmod 600) | `postgres` container | `s9f2K…` (`openssl rand -base64 24`) |
-| `ConnectionStrings__Default` | VPS `.env` | `api` container | `Host=postgres;Port=5432;Database=tictactoe;Username=tictactoe;Password=…` |
-| `Jwt__Key` | VPS `.env` | `api` container | 64 hex chars (`openssl rand -hex 32`); rotation procedure in [auth-identity-jwt](../02-backend/auth-identity-jwt.md) |
-| `Jwt__Issuer` / `Jwt__Audience` | VPS `.env` | `api` container | `https://play.tictacttoe.example` / `tic-tac-toe-client` |
-| `Cors__Origins` | VPS `.env` | `api` container | `https://play.tictacttoe.example` |
+| `ConnectionStrings__Default` | VPS `.env` | `web` container | `Host=postgres;Port=5432;Database=tictactoe;Username=tictactoe;Password=…` |
+| `Jwt__Key` | VPS `.env` | `web` container | 64 hex chars (`openssl rand -hex 32`); rotation procedure in [auth-identity-jwt](../02-backend/auth-identity-jwt.md) |
+| `Jwt__Issuer` / `Jwt__Audience` | VPS `.env` | `web` container | `https://play.tictacttoe.example` / `tic-tac-toe-client` |
+| `Cors__Origins` | VPS `.env` | `web` container | `https://play.tictacttoe.example` |
 
 Split by design: GitHub holds only SSH coordinates (so a leaked Actions secret yields nothing but a shell to a box that reads its real secrets from a `chmod 600` file), and the deploy user on the VPS has rights limited to the compose project — not root.
 
@@ -341,8 +318,8 @@ flowchart TD
     dev --> pr["PR to main"]
     pr --> gate{"Required CI checks"}
 
-    gate --> bu["backend-unit<br/>restore/build/format<br/>NUnit + coverage gates<br/>migration drift check"]
-    gate --> bi["backend-integration<br/>NUnit + Testcontainers<br/>(Docker on ubuntu-latest)"]
+    gate --> bu["backend unit (NUnit + Shouldly)<br/>restore/build/format<br/>NUnit + coverage gates<br/>migration drift check"]
+    gate --> bu["backend-unit<br/>NUnit + Shouldly<br/>(containerless)"]
     gate --> fu["frontend-unit<br/>prettier + eslint + vitest<br/>ng build production"]
     gate --> e2e["e2e<br/>Playwright vs compose stack"]
     gate --> sec["security-audit<br/>gitleaks · dotnet audit · npm audit"]
@@ -377,7 +354,7 @@ README badges (owner/repo placeholders resolve to the real repository):
 [![load](https://github.com/OWNER/tic-tac-toe/actions/workflows/load.yml/badge.svg)](https://github.com/OWNER/tic-tac-toe/actions/workflows/load.yml)
 ```
 
-- Check names in branch protection are the job ids — `backend-unit`, `backend-integration`, `frontend-unit`, `e2e`, `security-audit` — so the badge, the required-checks list and the [testing-strategy §12](../05-quality/testing-strategy.md#12-ci-integration) table use one vocabulary.
+- Check names in branch protection are the job ids — `backend-unit`, `frontend-unit`, `security-audit` — so the badge, the required-checks list and the [testing-strategy §12](../05-quality/testing-strategy.md#12-ci-integration) table use one vocabulary.
 - Load workflow has a badge but is explicitly **not** a required check; its red badge blocks a release (checklist item 3), not a merge.
 - Deployments surface as GitHub environment entries (`staging`, `production`) with the deployed image tag and run URL — that page is the "what is live right now" source of truth.
 
@@ -385,12 +362,12 @@ README badges (owner/repo placeholders resolve to the real repository):
 
 | Rule | Setting |
 | --- | --- |
-| Required status checks | `backend-unit`, `backend-integration`, `frontend-unit`, `e2e`, `security-audit` — all must pass; PRs cannot be merged while any is failing or missing |
+| Required status checks | `backend-unit`, `frontend-unit`, `security-audit` — all must pass; PRs cannot be merged while any is failing or missing |
 | Branches up to date | required ("strict") — the branch must be current with `main` at merge time |
 | History | squash merge only → `main` stays linear; each squash commit is the PR title (`feat: …` / `fix: …` conventional prefixes) |
 | PR template | includes the secrets self-check ("no credentials, keys or connection strings in this diff") and links to the checklists above |
 | Draft PRs | allowed for early CI signal; the same gates run, blocking applies when marked ready |
-| Testcontainers note | `backend-integration`/`e2e` fail immediately (not flakily) on runners without Docker — that is why the jobs are pinned to `ubuntu-latest`, where Docker is preinstalled; self-hosted runners must provide a Docker daemon |
+| Runner note | All shipped jobs are containerless; an `e2e`/integration job (Docker-based) may return post-V1 per ADR-0015 |
 
 ## Assumptions
 

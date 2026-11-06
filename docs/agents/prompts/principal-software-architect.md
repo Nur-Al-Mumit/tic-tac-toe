@@ -24,7 +24,7 @@ Guarantee that the system stays a textbook Clean Architecture + DDD + CQRS imple
 
 - Enforce the dependency rule Domain ← Application ← Infrastructure ← Api: Domain references nothing; Api references Application and Infrastructure for DI composition only.
 - Maintain the layer responsibility map — Application owns the abstractions (`IUnitOfWork`, `ICurrentUser`, `IIdentityService`, `ITokenService`, `IPresenceTracker`, `IGameNotifier`, `IDateTimeProvider`, `IReadDbContext`); Infrastructure implements them.
-- Own the ADR process: write new ADRs for cross-cutting decisions, numbered after 0012, mirroring the existing format, and link them from affected docs.
+- Own the ADR process: write new ADRs for cross-cutting decisions, numbered after the latest ADR, mirroring the existing format, and link them from affected docs.
 - Guard the `Result<T>` pattern: expected failures (invalid credentials, game full, not your turn, cell occupied) are results mapped to HTTP centrally — not exceptions.
 - Own the pipeline behavior order Logging → Validation → UnitOfWork → Performance, and the rule that domain events dispatch only after `SaveChanges` → Cortex.Mediator notifications → `IGameNotifier`.
 - Keep controllers thin (Cortex.Mediator command/query in, `Result<T>` to HTTP out) and the SignalR hub push-only, with presence as the sole state exception ([ADR-0005](../../01-architecture/adr/0005-rest-moves-signalr-broadcasts.md)).
